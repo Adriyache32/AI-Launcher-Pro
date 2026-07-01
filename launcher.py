@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-import curses, time, subprocess, os, shutil, shlex
+import curses, time, subprocess, os, shutil, shlex, platform
 from pathlib import Path
 
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
-VERSION = "2.11.v"
+VERSION = "2.12.v"
 GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
 
 def check_version():
@@ -16,32 +16,64 @@ def check_version():
         return latest if latest != VERSION else None
     except: return None
 
+def detect_specs():
+    s = {"os": platform.system().lower(), "arch": platform.machine(), "cpu_name":"desconocido","cpu_cores":0,"ram_gb":0}
+    try:
+        c = Path("/proc/cpuinfo").read_text().split("\n")
+        for l in c:
+            if "model name" in l: s["cpu_name"]=l.split(":")[1].strip(); break
+        s["cpu_cores"] = sum(1 for l in c if "processor" in l)
+    except: pass
+    try:
+        for l in Path("/proc/meminfo").read_text().split("\n"):
+            if "MemTotal" in l: s["ram_gb"]=int(l.split()[1])//1048576; break
+    except: pass
+    if W:
+        import winreg
+        try:
+            k=winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,r"HARDWARE\DESCRIPTION\System\CentralProcessor\0")
+            s["cpu_name"]=winreg.QueryValueEx(k,"ProcessorNameString")[0].strip()
+            winreg.CloseKey(k)
+        except: pass
+    return s
+
+def compatible(specs, reqs):
+    if specs["arch"] != "x86_64" and reqs.get("arch","x86_64")=="x86_64":
+        return (False, f"Arq: {specs['arch']} no compatible")
+    if reqs.get("ram",0) > 0 and specs["ram_gb"] < reqs["ram"]:
+        return (False, f"RAM: {specs['ram_gb']}GB < {reqs['ram']}GB")
+    if reqs.get("cpu_cores",0) > 0 and specs["cpu_cores"] < reqs["cpu_cores"]:
+        return (False, f"CPU: {specs['cpu_cores']} nucleos < {reqs['cpu_cores']}")
+    return (True, "OK")
+
+SP = detect_specs()
+
 CATS = [
     ("TOP TIER", "★★★★★", [
-        ("Claude Code",     ["~/.claude", "cmd:npx"],          "LIMITADA",  [NPX, "@anthropic-ai/claude-code"]),
-        ("opencode",        ["~/.opencode"],                   "GRATIS",    [str(HOME/".opencode/bin/opencode")]),
+        ("Claude Code",     ["~/.claude","cmd:npx"],          "LIMITADA",  {"ram":8,"cpu_cores":4},   [NPX,"@anthropic-ai/claude-code"]),
+        ("opencode",        ["~/.opencode"],                   "GRATIS",    {"ram":0,"cpu_cores":0},   [str(HOME/".opencode/bin/opencode")]),
     ]),
     ("BEST VALUE", "★★★★☆", [
-        ("OpenAI",          ["~/.openai", "cmd:openai"],       "PAGA",      ["openai"]),
-        ("Gemini-CLI",      ["~/.gemini", "cmd:gemini-cli"],   "GRATIS",    ["gemini-cli"]),
-        ("xAI (Grok)",      ["cmd:grok"],                      "LIMITADA",  ["grok"]),
-        ("Ollama",          ["~/.ollama", "cmd:ollama"],       "GRATIS",    ["ollama","run","llama3.1"]),
+        ("OpenAI",          ["~/.openai","cmd:openai"],       "PAGA",      {"ram":0,"cpu_cores":0},   ["openai"]),
+        ("Gemini-CLI",      ["~/.gemini","cmd:gemini-cli"],   "GRATIS",    {"ram":0,"cpu_cores":0},   ["gemini-cli"]),
+        ("xAI (Grok)",      ["cmd:grok"],                      "LIMITADA",  {"ram":0,"cpu_cores":0},   ["grok"]),
+        ("Ollama",          ["~/.ollama","cmd:ollama"],       "GRATIS",    {"ram":8,"cpu_cores":4},   ["ollama","run","llama3.1"]),
     ]),
     ("SOLID", "★★★☆☆", [
-        ("Cline",          ["~/.vscode/extensions/saoudrizwan.claude-dev*", "cmd:code"],  "GRATIS",  ["code","--install-extension","saoudrizwan.claude-dev"]),
-        ("GitHub Copilot", ["~/.vscode/extensions/github.copilot*", "cmd:gh"],             "PAGA",    ["gh","copilot"]),
-        ("Kilo Code",      ["~/.vscode/extensions/kilocode.kilocode*", "cmd:code"],        "GRATIS",  ["code","--install-extension","kilocode.kilocode"]),
-        ("Cursor IDE",     ["~/.cursor", "cmd:cursor"],        "PAGA",    ["cursor","."]),
-        ("OpenRouter",     ["cmd:openrouter"],                  "PAGA",    ["openrouter"]),
-        ("Kiro AI",        ["cmd:kiro"],                        "PAGA",    ["kiro"]),
-        ("Vertex AI",      ["~/.config/gcloud", "cmd:gcloud"], "PAGA",    ["gcloud"]),
+        ("Cline",          ["~/.vscode/extensions/saoudrizwan.claude-dev*","cmd:code"],  "GRATIS",  {"ram":0,"cpu_cores":0},  ["code","--install-extension","saoudrizwan.claude-dev"]),
+        ("GitHub Copilot", ["~/.vscode/extensions/github.copilot*","cmd:gh"],             "PAGA",    {"ram":0,"cpu_cores":0},  ["gh","copilot"]),
+        ("Kilo Code",      ["~/.vscode/extensions/kilocode.kilocode*","cmd:code"],        "GRATIS",  {"ram":0,"cpu_cores":0},  ["code","--install-extension","kilocode.kilocode"]),
+        ("Cursor IDE",     ["~/.cursor","cmd:cursor"],        "PAGA",    {"ram":0,"cpu_cores":0},  ["cursor","."]),
+        ("OpenRouter",     ["cmd:openrouter"],                  "PAGA",    {"ram":0,"cpu_cores":0},  ["openrouter"]),
+        ("Kiro AI",        ["cmd:kiro"],                        "PAGA",    {"ram":0,"cpu_cores":0},  ["kiro"]),
+        ("Vertex AI",      ["~/.config/gcloud","cmd:gcloud"], "PAGA",    {"ram":0,"cpu_cores":0},  ["gcloud"]),
     ]),
     ("NICHE", "★★☆☆☆", [
-        ("Nvidia NIM",     ["~/.nim", "cmd:docker"],           "LIMITADA",  ["docker"]),
-        ("Cloudflare AI",  ["~/.cloudflare", "cmd:wrangler"],  "GRATIS",    ["wrangler"]),
-        ("Qoder",          ["cmd:qoder"],                      "GRATIS",    ["qoder"]),
-        ("Antigravity",    ["cmd:antigravity"],                "GRATIS",    ["antigravity"]),
-        ("BytePlus",       ["cmd:byteplus"],                   "PAGA",      ["byteplus"]),
+        ("Nvidia NIM",     ["~/.nim","cmd:docker"],           "LIMITADA",  {"ram":16,"cpu_cores":8},  ["docker"]),
+        ("Cloudflare AI",  ["~/.cloudflare","cmd:wrangler"],  "GRATIS",    {"ram":0,"cpu_cores":0},  ["wrangler"]),
+        ("Qoder",          ["cmd:qoder"],                      "GRATIS",    {"ram":0,"cpu_cores":0},  ["qoder"]),
+        ("Antigravity",    ["cmd:antigravity"],                "GRATIS",    {"ram":0,"cpu_cores":0},  ["antigravity"]),
+        ("BytePlus",       ["cmd:byteplus"],                   "PAGA",      {"ram":0,"cpu_cores":0},  ["byteplus"]),
     ]),
 ]
 
@@ -54,8 +86,7 @@ def ready(checks):
         elif "*" in c:
             p = Path(c).expanduser()
             try:
-                for _ in p.parent.glob(p.name):
-                    return True
+                for _ in p.parent.glob(p.name): return True
             except: pass
         else:
             if Path(c).expanduser().exists(): return True
@@ -63,9 +94,8 @@ def ready(checks):
 
 def find_term():
     if W: return None
-    # Detect Termux
     if "com.termux" in os.environ.get("PREFIX","") or os.environ.get("TERMUX_VERSION"):
-        return ("sh", ["-c"])  # run directly in Termux
+        return ("sh", ["-c"])
     terms = [("x-terminal-emulator",["-e"]),("gnome-terminal",["--","bash","-c"]),
              ("konsole",["--hold","-e"]),("xfce4-terminal",["-e"]),("lxterminal",["-e"]),
              ("urxvt",["-e"]),("xterm",["-e"]),("alacritty",["-e"]),("kitty",["-e"]),
@@ -89,6 +119,22 @@ def lt(cmd):
     t = find_term()
     if t: subprocess.Popen([t[0]]+t[1]+[s],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); return True
     return False
+
+def popup(scr, msg):
+    h,w = scr.getmaxyx()
+    mh = 7; mw = 52
+    y = h//2 - mh//2; x = w//2 - mw//2
+    win = curses.newwin(mh, mw, y, x)
+    win.box()
+    win.addstr(1,2,"⚠  AI Launcher Pro",curses.A_BOLD)
+    for i, m in enumerate(msg.split("\n")):
+        win.addstr(2+i, 2, m[:mw-4])
+    win.addstr(mh-2, 2, "Presiona cualquier tecla", curses.A_BLINK)
+    win.refresh()
+    scr.getch()
+    del win
+    scr.touchwin(scr)
+    scr.refresh()
 
 def dl(scr, name, check, cmd):
     h,w = scr.getmaxyx(); m = h//2
@@ -118,12 +164,12 @@ def main(scr):
     curses.init_pair(5, curses.COLOR_MAGENTA, -1)
     curses.init_pair(6, curses.COLOR_BLUE, -1)
     curses.init_pair(7, curses.COLOR_WHITE, -1)
+    curses.init_pair(10, curses.COLOR_BLACK, curses.COLOR_RED)
+    curses.init_pair(11, curses.COLOR_BLACK, curses.COLOR_GREEN)
+    curses.init_pair(12, curses.COLOR_BLACK, curses.COLOR_YELLOW)
 
-    # brand colors per tool (index = global index 0-17)
-    # Claude→am, opencode→mg, OpenAI→vd, Gemini→az, Grok→br, Ollama→cn
-    # Cline→rj, Copilot→am, Kilo→mg, Cursor→vd, OpenRouter→az, Kiro→mg, Vertex→az
-    # Nvidia→vd, Cloudflare→am, Qoder→cn, Antigravity→br, BytePlus→vd
     TC = [3,5, 2,6,7,4, 1,3,5,2,6,5,6, 2,3,4,7,2]
+    PRICE_PAIR = {"PAGA":10, "GRATIS":11, "LIMITADA":12}
     scr.nodelay(1)
     for _ in range(6): scr.clear(); scr.refresh(); time.sleep(0.02)
     scr.nodelay(0)
@@ -147,6 +193,7 @@ def main(scr):
 
     update_avail = check_version()
     idx = 0; scroll = 0
+    bw = 26; stride = bw + 1  # card box width, step between cols
     while True:
         scr.clear(); h,w = scr.getmaxyx()
         R = curses.color_pair(1); G = curses.color_pair(2); Y = curses.color_pair(3); B = curses.A_BOLD
@@ -157,39 +204,34 @@ def main(scr):
         sa(scr,1,(w-len(tit))//2,tit,R|B)
         sa(scr,1,2,f"◆ {len(ALL)} TOOLS",G)
         for i in range(w): sa(scr,2,i,"─",R)
-        lw = 32; sx = lw+3  # separator x
+        lw = 32; sx = lw+3
         for y in range(topy, boty+1): sa(scr,y,sx,"│",R)
         for y in range(topy, boty+1): sa(scr,y,w-1,"│",R)
         sa(scr,topy,sx+1,"─"*(w-sx-3),R)
         sa(scr,boty,sx+1,"─"*(w-sx-3),R)
 
-        # precompute card positions for scroll
-        card_y = {}  # gi -> virtual y
+        card_y = {}
         vy = topy; gi = 0
         for _,_,items in CATS:
             rows = (len(items)+1)//2
             for i, item in enumerate(items):
-                row = i // 2
-                card_y[gi] = vy + row*5
+                card_y[gi] = vy + (i//2)*6
                 gi += 1
-            vy += rows*5 + 1
+            vy += rows*6 + 1
 
         total_h = vy - topy
-
-        # keep selected visible
         sel_vy = card_y.get(idx, topy)
         if sel_vy - scroll < topy: scroll = sel_vy - topy
-        if sel_vy - scroll + 4 > boty: scroll = sel_vy + 4 - boty
+        if sel_vy - scroll + 5 > boty: scroll = sel_vy + 5 - boty
         scroll = max(0, min(scroll, total_h - vh)) if total_h > vh else 0
 
-        # draw left sidebar
+        # sidebar
         sy = topy - scroll; gi = 0
         for cat, star, items in CATS:
             n = len(items); bh = n + 4
             vy2 = sy; sy2 = sy
             if sy2 + bh > topy - 1:
-                s1 = sy2 + bh - 1
-                for i0, (name, check, _, _) in enumerate(items):
+                for i0, (name, check, _, _, _) in enumerate(items):
                     yy = sy2 + 3 + i0
                     if yy < topy or yy > boty: continue
                     r = "●" if ready(check) else "○"
@@ -212,27 +254,48 @@ def main(scr):
                 gi += n
             sy += bh + 1
 
-        # draw right cards
+        # cards
         gi = 0
         for _,_,items in CATS:
-            for i, (name, check, price, cmd) in enumerate(items):
-                col = i%2; row = i//2
+            for i, (name, check, price, reqs, cmd) in enumerate(items):
+                col = i%2
                 vy2 = card_y[gi]
                 yy = vy2 - scroll
-                if yy < topy - 4 or yy > boty:
+                if yy < topy - 5 or yy > boty:
                     gi += 1; continue
                 sl = curses.A_REVERSE if gi == idx else 0
                 cc = curses.color_pair(TC[gi])
-                cx = sx + 3 + col*23
+                cx = sx + 3 + col*stride
                 num = gi+1; rdy = ready(check)
                 dot = "●" if rdy else "○"; st = "LISTO" if rdy else "FALTA"
-                n2 = name[:16]
-                p2 = price[:18]
-                sa(scr,yy,cx,"┌────────────────────┐",cc|sl)
-                sa(scr,yy+1,cx,f"│ {num:2d} {n2:16s}│",cc|sl)
-                sa(scr,yy+2,cx,f"│ {p2:20s}│",cc|sl)
-                sa(scr,yy+3,cx,f"│ {star} {dot} {st} │",cc|sl)
-                sa(scr,yy+4,cx,"└────────────────────┘",cc|sl)
+                cm = compatible(SP, reqs)
+                compat_ok, compat_reason = cm
+                compat_icon = "✓" if compat_ok else "✗"
+                compat_cp = G if compat_ok else R
+                pp = PRICE_PAIR.get(price, 10)
+                price_label = f" {price} "
+                plen = len(price_label)
+                cpu_txt = SP["cpu_name"] if SP["cpu_name"]!="desconocido" else SP["arch"]
+                n2 = name[:bw-6]
+                cpu_left = bw-2-plen
+
+                # build each line as exact bw=26 string
+                top = "┌"+"─"*(bw-2)+"┐"
+                L1 = f"│ {num:2d} {n2:{bw-6}s}│"              # line 1
+                L2badge = f"│{price_label}"                     # badge portion
+                L2rest = f"{cpu_txt[:cpu_left]:{cpu_left}s}│"   # cpu portion
+                L3 = f"│ {star} {dot} {st} │".ljust(bw-1)+"│"  # stars
+                l4txt = f"CPU:{compat_icon} {compat_reason[:12]}"
+                L4 = f"│{l4txt:^{bw-2}s}│"                     # compat
+                L5 = "└"+"─"*(bw-2)+"┘"
+
+                sa(scr,yy,cx,top,cc|sl)
+                sa(scr,yy+1,cx,L1,cc|sl)
+                sa(scr,yy+2,cx,L2badge,curses.color_pair(pp)|sl)
+                sa(scr,yy+2,cx+plen+1,L2rest,cc|sl)
+                sa(scr,yy+3,cx,L3,cc|sl)
+                sa(scr,yy+4,cx,L4,compat_cp|sl)
+                sa(scr,yy+5,cx,L5,cc|sl)
                 gi += 1
 
         for i in range(w): sa(scr,h-3,i,"═",R)
@@ -244,8 +307,12 @@ def main(scr):
         if k == curses.KEY_UP and idx > 0: idx -= 1
         elif k == curses.KEY_DOWN and idx < len(ALL)-1: idx += 1
         elif k == ord('\n'):
-            cat, star, (name, check, cmd) = ALL[idx]
-            dl(scr, name, check, cmd)
+            cat, star, (name, check, price, reqs, cmd) = ALL[idx]
+            cm, reason = compatible(SP, reqs)
+            if not cm:
+                popup(scr, f"{name}\n{reason}\nTu PC no cumple los requisitos minimos")
+            else:
+                dl(scr, name, check, cmd)
         elif k == ord('q'): break
 
 def mw():

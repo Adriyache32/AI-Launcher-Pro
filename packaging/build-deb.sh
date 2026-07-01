@@ -5,7 +5,7 @@ set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
-VERSION="2.11.v"
+VERSION="2.12.v"
 PKG_NAME="ai-launcher-pro"
 ARCH="all"
 
