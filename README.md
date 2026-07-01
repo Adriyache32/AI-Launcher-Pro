@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/in
 | Plataforma | Estado |
 |------------|--------|
 | Linux      | Funciona |
-| macOS      | Funciona |
+| macOS      | Proximamente |
 | Windows    | Funciona (PowerShell/Cmd) |
 | Termux     | Funciona (`pkg install python python-curses`) |
 
