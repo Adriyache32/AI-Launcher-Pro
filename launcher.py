@@ -197,7 +197,7 @@ def check_pkg_mgrs(install_cmds):
     return missing
 
 def detect_package_need():
-    PKG_BASE = f"https://github.com/Adriyache32/AI-Launcher-Pro/releases/download/{VERSION}/"
+    PKG_BASE = "https://github.com/Adriyache32/AI-Launcher-Pro/releases/download/packages/"
     if SP.get("ios"):
         return ("iOS", "🍏 iOS (proximamente)", PKG_BASE + f"AI-Launcher-iOS-{VERSION}.zip",
                 "iOS detectado. Package para iPhone/iPad en desarrollo.")
@@ -222,6 +222,14 @@ PKG_EXTRAS = []
 if SP["os"] == "linux":
     PKG_EXTRAS.append(("🐧 Linux Enhancement", PKG_BASE + "AI-Launcher-Linux-Enhancement-v2.17.v.zip",
                        "Mejoras opcionales: desktop, auto-completion, aliases, temas, systemd, comandos extra"))
+    PKG_EXTRAS.append(("🪟 Windows", PKG_BASE + "AI-Launcher-Windows-v2.17.v.zip",
+                       "Instalador para Windows con Python + curses automatico"))
+    PKG_EXTRAS.append(("📱 Termux", PKG_BASE + "AI-Launcher-Termux-v2.17.v.zip",
+                       "Setup para Termux (Android)"))
+    PKG_EXTRAS.append(("🖥️ Legacy", PKG_BASE + "AI-Launcher-Legacy-v2.17.v.zip",
+                       "PC viejos, modo texto sin curses"))
+    PKG_EXTRAS.append(("🍏 iOS", PKG_BASE + "AI-Launcher-iOS-v2.17.v.zip",
+                       "Package para iPhone/iPad (proximamente)"))
 
 def lt(cmd):
     if not cmd: return False
