@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-import curses, time, subprocess, os, shutil, shlex, platform, sys
+import curses, time, subprocess, os, shutil, shlex, platform, sys, json
 from pathlib import Path
+
+if sys.version_info < (3, 7):
+    print("Python 3.7+ required"); sys.exit(1)
 
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
-VERSION = "2.15.v"
+VERSION = "2.16.v"
 GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
 GIT_LAUNCHER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/launcher.py"
 
@@ -49,7 +52,18 @@ def do_update(scr):
         return False
 
 def detect_specs():
-    s = {"os": platform.system().lower(), "arch": platform.machine(), "cpu_name":"desconocido","cpu_cores":0,"ram_gb":0}
+    s = {"os": platform.system().lower(), "arch": platform.machine(),
+         "cpu_name":"desconocido","cpu_cores":0,"ram_gb":0,
+         "termux": False, "ios": False, "android": False}
+    s["termux"] = "com.termux" in os.environ.get("PREFIX","") or bool(os.environ.get("TERMUX_VERSION"))
+    try:
+        if "iPhone" in platform.platform() or "iPad" in platform.platform():
+            s["ios"] = True; s["arch"] = "aarch64"
+    except: pass
+    try:
+        if "android" in platform.platform().lower():
+            s["android"] = True
+    except: pass
     try:
         c = Path("/proc/cpuinfo").read_text().split("\n")
         for l in c:
@@ -61,21 +75,28 @@ def detect_specs():
             if "MemTotal" in l: s["ram_gb"]=int(l.split()[1])//1048576; break
     except: pass
     if W:
-        import winreg
         try:
+            import winreg
             k=winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,r"HARDWARE\DESCRIPTION\System\CentralProcessor\0")
             s["cpu_name"]=winreg.QueryValueEx(k,"ProcessorNameString")[0].strip()
             winreg.CloseKey(k)
+        except: pass
+    if s["os"] == "darwin":
+        try:
+            s["arch"] = subprocess.check_output(["uname","-m"],text=True).strip()
         except: pass
     return s
 
 def compatible(specs, reqs):
     if "arch" in reqs and specs["arch"] != reqs["arch"]:
         return (False, f"Arq: {specs['arch']} no compatible")
+    warns = []
     if reqs.get("ram",0) > 0 and specs["ram_gb"] < reqs["ram"]:
-        return (False, f"RAM: {specs['ram_gb']}GB < {reqs['ram']}GB")
+        warns.append(f"RAM min {reqs['ram']}GB")
     if reqs.get("cpu_cores",0) > 0 and specs["cpu_cores"] < reqs["cpu_cores"]:
-        return (False, f"CPU: {specs['cpu_cores']} nucleos < {reqs['cpu_cores']}")
+        warns.append(f"CPU min {reqs['cpu_cores']} nucleos")
+    if warns:
+        return (True, "⚠ " + ", ".join(warns))
     return (True, "OK")
 
 SP = detect_specs()
@@ -138,8 +159,13 @@ def ready(checks):
 
 def find_term():
     if W: return None
-    if "com.termux" in os.environ.get("PREFIX","") or os.environ.get("TERMUX_VERSION"):
-        return None
+    if SP.get("termux") or SP.get("ios"): return None
+    if SP["os"] == "darwin":
+        mac_terms = [("Terminal","bash"),("iTerm2","bash")]
+        for app, shell in mac_terms:
+            p = f"/Applications/{app}.app"
+            if os.path.isdir(p):
+                return ("open",["-a",app,"--args",shell,"-c"])
     terms = [("x-terminal-emulator",["-e"]),("gnome-terminal",["--","bash","-c"]),
              ("konsole",["--hold","-e"]),("xfce4-terminal",["-e"]),("lxterminal",["-e"]),
              ("urxvt",["-e"]),("xterm",["-e"]),("alacritty",["-e"]),("kitty",["-e"]),
@@ -155,6 +181,20 @@ def sa(scr, y, x, t, *a):
         if x+len(t)>mx: t = t[:mx-x]
         if t: scr.addstr(y, x, t, *a)
     except: pass
+
+def check_pkg_mgrs(install_cmds):
+    mgrs = {"pip": shutil.which("pip") or shutil.which("pip3"),
+            "npm": shutil.which("npm"),
+            "curl": shutil.which("curl"),
+            "brew": shutil.which("brew"),
+            "apt": shutil.which("apt") if not W else None}
+    missing = []
+    for c in (install_cmds or []):
+        for m in mgrs:
+            if c.startswith(m) and not mgrs[m]:
+                missing.append(m)
+                break
+    return missing
 
 def lt(cmd):
     if not cmd: return False
@@ -357,8 +397,12 @@ def main(scr):
                 dot = "●" if rdy else "○"; st = "LISTO" if rdy else "FALTA"
                 cm = compatible(SP, reqs)
                 compat_ok, compat_reason = cm
-                compat_icon = "✓" if compat_ok else "✗"
-                compat_cp = G if compat_ok else R
+                if compat_ok and compat_reason != "OK":
+                    compat_icon = "⚠"; compat_cp = Y
+                elif compat_ok:
+                    compat_icon = "✓"; compat_cp = G
+                else:
+                    compat_icon = "✗"; compat_cp = R
                 pp = PRICE_PAIR.get(price, 10)
                 price_label = f" {price} "
                 plen = len(price_label)
@@ -401,21 +445,78 @@ def main(scr):
             cat, star, (name, check, price, reqs, tags, cmd, install_cmds) = ALL[idx]
             cm, reason = compatible(SP, reqs)
             if not cm:
-                popup(scr, f"{name}\n{reason}\nTu PC no cumple los requisitos minimos")
+                popup(scr, f"{name}\n{reason}")
             elif not ready(check):
-                msg = f"{name} - Instalacion:\n"
-                msg += "\n".join(f"  ${c}" for c in (install_cmds or ["pip install "+name.lower().replace(" ","")]))
-                popup(scr, msg)
+                lines = [f"{name} - Instalacion:"]
+                for c in (install_cmds or ["pip install "+name.lower().replace(" ","")]):
+                    lines.append(f"  $ {c}")
+                missing = check_pkg_mgrs(install_cmds)
+                if missing:
+                    lines.append("")
+                    lines.append(f"⚠ Faltan: {', '.join(missing)}")
+                popup(scr, "\n".join(lines))
             else:
                 dl(scr, name, check, cmd)
         elif k == ord('u'):
             if do_update(scr): return
         elif k == ord('q'): break
 
+def console_mode():
+    print(f"\n  AI LAUNCHER PRO {VERSION} — Modo texto")
+    print(f"  {'='*40}")
+    print(f"  OS: {platform.system()} | Arch: {SP['arch']} | CPU: {SP['cpu_name']} | RAM: {SP['ram_gb']}GB")
+    if SP["termux"]: print("  Terminal: Termux")
+    if SP["ios"]:    print("  Terminal: iOS")
+    print(f"  {'='*40}\n")
+    items = []
+    for cat, star, group in CATS:
+        for item in group:
+            name, check, price, reqs, tags, cmd, install_cmds = item
+            rdy = "●" if ready(check) else "○"
+            items.append((cat, star, name, rdy, install_cmds, cmd, check, price, reqs, tags))
+    while True:
+        print(f"\n  {'#':>2} {'Status':<7} {'IA':<22} {'Categoria':<14}")
+        print(f"  {'-'*50}")
+        for i, (cat, star, name, rdy, _, _, _, _, _, _) in enumerate(items):
+            print(f"  {i+1:>2}  {rdy:<6} {name:<22} {cat:<14}")
+        print(f"\n  [1-{len(items)}] info/instalar  [q] salir  ", end="")
+        try:
+            inp = input().strip()
+        except (EOFError, KeyboardInterrupt):
+            break
+        if inp.lower() in ("q","quit","exit",""): break
+        try:
+            n = int(inp)-1
+            if n < 0 or n >= len(items): continue
+            cat, star, name, rdy, install_cmds, cmd, check, price, reqs, tags = items[n]
+            cm, reason = compatible(SP, reqs)
+            if not cm:
+                input(f"\n  {name}: {reason}\n  Enter...")
+            elif not ready(check):
+                print(f"\n  {name} — Instalacion:")
+                for c in (install_cmds or ["pip install "+name.lower().replace(" ","")]):
+                    print(f"    $ {c}")
+                input("  Enter...")
+            else:
+                print(f"\n  Lanzando {name}...")
+                subprocess.run(cmd)
+                input("\n  Enter para volver...")
+        except (ValueError, IndexError): pass
+
 def mw():
-    try: curses.wrapper(main)
+    try:
+        if W:
+            try:
+                import _curses
+            except ImportError:
+                console_mode(); return
+        curses.wrapper(main)
     except Exception as e:
-        print("\n"+"="*50); print(f"ERROR: {type(e).__name__}: {e}")
-        print("="*50); input("\nEnter para salir...")
+        en = type(e).__name__.lower()
+        if "curses" in en or "no module" in str(e).lower():
+            console_mode()
+        else:
+            print("\n"+"="*50); print(f"ERROR: {type(e).__name__}: {e}")
+            print("="*50); input("\nEnter para salir...")
     except KeyboardInterrupt: print("\nSaliste.")
 if __name__ == "__main__": mw()
