@@ -135,7 +135,9 @@ def main(scr):
             for i,(name,check,_) in enumerate(items):
                 r = "●" if ready(check) else "○"
                 c = curses.color_pair(2) if r else curses.color_pair(3)
-                sa(scr,sy+4+i,2,f"│ {r} {name:20s}│",c|(curses.A_BOLD if r else 0))
+                isel = curses.A_REVERSE if gi == idx else 0
+                sa(scr,sy+4+i,2,f"│ {r} {name:20s}│",c|isel)
+                gi += 1
             sa(scr,sy+4+n,2,"└──────────────────────┘",b)
 
             cols = 2; bw = 22; bh = 3; gap2 = 2; sx = gx
@@ -144,14 +146,13 @@ def main(scr):
                 xx = sx + col * (bw + gap2); yy = sy + row * (bh + 1)
                 if yy + bh > h - 3: break
                 sl = (gi == idx)
-                p2 = curses.color_pair(2) if sl else (curses.color_pair(1) if sl else curses.color_pair(3))
-                sl_attr = curses.A_BOLD if sl else 0
+                sel = curses.A_REVERSE if sl else 0
                 num = gi + 1; rdy = ready(check); dot = "●" if rdy else "○"
                 st = "LISTO" if rdy else "FALTA"
-                sa(scr,yy,xx,"┌────────────────────┐",p2|sl_attr)
-                sa(scr,yy+1,xx,f"│ {num:2d} {name:16s}│",(curses.color_pair(2)|curses.A_BOLD) if sl else 0)
-                sa(scr,yy+2,xx,f"│ {star} {dot} {st} │",(curses.color_pair(2)|curses.A_BOLD) if sl else p2)
-                gi += 1
+                sc = curses.color_pair(2) if rdy else curses.color_pair(3)
+                sa(scr,yy,xx,"┌────────────────────┐",sc|sel)
+                sa(scr,yy+1,xx,f"│ {num:2d} {name:16s}│",(curses.color_pair(2)|sel))
+                sa(scr,yy+2,xx,f"│ {star} {dot} {st} │",sc|sel)
 
             sy += hh + 1
             cc += 1
