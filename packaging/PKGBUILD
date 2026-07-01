@@ -1,0 +1,42 @@
+# PKGBUILD for Arch Linux / Termux (via pacman)
+# Maintainer: Adriyache32 <adriyache32@users.noreply.github.com>
+# For Termux on Android, use: pkgbuild -o ai-launcher-pro
+
+pkgname=ai-launcher-pro
+pkgver=2.12.v
+pkgrel=1
+pkgdesc="Menu interactivo con 18 IAs para programar (curses UI)"
+arch=('any')
+url="https://github.com/Adriyache32/AI-Launcher-Pro"
+license=('MIT')
+depends=('python')
+optdepends=('python-curses')
+makedepends=('git')
+source=("git+https://github.com/Adriyache32/AI-Launcher-Pro.git")
+sha512sums=('SKIP')
+
+package() {
+    cd "$srcdir/AI-Launcher-Pro"
+    
+    # Install launcher
+    install -Dm755 launcher.py "$pkgdir/usr/share/ai-launcher-pro/launcher.py"
+    
+    # Create wrapper script
+    mkdir -p "$pkgdir/usr/bin"
+    cat > "$pkgdir/usr/bin/open-ai" << EOF
+#!/bin/sh
+exec python3 /usr/share/ai-launcher-pro/launcher.py
+EOF
+    chmod 755 "$pkgdir/usr/bin/open-ai"
+    
+    # Desktop entry
+    install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/ai-launcher-pro.desktop" << DESKTOP
+[Desktop Entry]
+Name=AI Launcher Pro
+Comment=18 IAs para programar
+Exec=open-ai
+Terminal=true
+Type=Application
+Categories=Development;Utility;
+DESKTOP
+}

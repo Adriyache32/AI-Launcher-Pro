@@ -41,7 +41,7 @@ EOF
 # Control file
 cat > build/DEBIAN/control << 'CONTROL'
 Package: ai-launcher-pro
-Version: 2.11.v
+Version: 2.12.v
 Architecture: all
 Maintainer: Adriyache32 <adriyache32@users.noreply.github.com>
 Description: Menu interactivo con 18 IAs para programar
