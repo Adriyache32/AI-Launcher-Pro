@@ -242,8 +242,8 @@ def main(scr):
                     txt = f"│ {num:2d} {r} {name:23s}│"
                     sa(scr,yy,2,txt,rc|sl)
                     gi += 1
-                if sy2 >= topy and sy2 <= boty:
-                    sa(scr,sy2,2,f"│  {cat:28s}│",curses.color_pair(TC[gi])|B)
+                if sy2 >= topy and sy2 <= boty and gi >= n:
+                    sa(scr,sy2,2,f"│  {cat:28s}│",curses.color_pair(TC[gi-n])|B)
                 if sy2+1 >= topy and sy2+1 <= boty:
                     sa(scr,sy2+1,2,f"│  {star:28s}│",Y)
                 if sy2+2 >= topy and sy2+2 <= boty:
