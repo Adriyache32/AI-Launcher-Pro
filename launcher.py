@@ -5,35 +5,37 @@ from pathlib import Path
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
+
 CATS = [
     ("TOP TIER", "★★★★★", [
-        ("Claude Code",      "npx",              [NPX, "@anthropic-ai/claude-code"]),
-        ("TU (opencode)",    str(HOME/".opencode/bin/opencode"), [str(HOME/".opencode/bin/opencode")]),
-        ("Free Claude Code", "free-claude-code", ["free-claude-code"]),
+        ("Claude Code",     "npx",              [NPX, "@anthropic-ai/claude-code"]),
+        ("TU (opencode)",   str(HOME/".opencode/bin/opencode"), [str(HOME/".opencode/bin/opencode")]),
+        ("Free Claude Code","free-claude-code", ["free-claude-code"]),
     ]),
     ("BEST VALUE", "★★★★☆", [
-        ("OpenAI",           "openai",           ["openai"]),
-        ("Gemini-CLI",       "gemini-cli",       ["gemini-cli"]),
-        ("xAI (Grok)",       "grok",             ["grok"]),
-        ("Ollama",           "ollama",           ["ollama","run","llama3.1"]),
+        ("OpenAI",          "openai",     ["openai"]),
+        ("Gemini-CLI",      "gemini-cli", ["gemini-cli"]),
+        ("xAI (Grok)",      "grok",       ["grok"]),
+        ("Ollama",          "ollama",     ["ollama","run","llama3.1"]),
     ]),
     ("SOLID", "★★★☆☆", [
-        ("Cline",            "code",             ["code","--install-extension","saoudrizwan.claude-dev"]),
-        ("GitHub Copilot",   "gh",               ["gh","copilot"]),
-        ("Kilo Code",        "code",             ["code","--install-extension","kilocode.kilocode"]),
-        ("Cursor IDE",       "cursor",           ["cursor","."]),
-        ("OpenRouter",       "openrouter",       ["openrouter"]),
-        ("Kiro AI",          "kiro",             ["kiro"]),
-        ("Vertex AI",        "gcloud",           ["gcloud"]),
+        ("Cline",          "code",  ["code","--install-extension","saoudrizwan.claude-dev"]),
+        ("GitHub Copilot", "gh",    ["gh","copilot"]),
+        ("Kilo Code",      "code",  ["code","--install-extension","kilocode.kilocode"]),
+        ("Cursor IDE",     "cursor",["cursor","."]),
+        ("OpenRouter",     "openrouter",["openrouter"]),
+        ("Kiro AI",        "kiro",  ["kiro"]),
+        ("Vertex AI",      "gcloud",["gcloud"]),
     ]),
     ("NICHE", "★★☆☆☆", [
-        ("Nvidia NIM",       "docker",           ["docker"]),
-        ("Cloudflare AI",    "wrangler",         ["wrangler"]),
-        ("Qoder",            "qoder",            ["qoder"]),
-        ("Antigravity",      "antigravity",      ["antigravity"]),
-        ("BytePlus",         "byteplus",         ["byteplus"]),
+        ("Nvidia NIM",     "docker",   ["docker"]),
+        ("Cloudflare AI",  "wrangler", ["wrangler"]),
+        ("Qoder",          "qoder",    ["qoder"]),
+        ("Antigravity",    "antigravity",["antigravity"]),
+        ("BytePlus",       "byteplus", ["byteplus"]),
     ]),
 ]
+
 ALL = [(c, s, a) for cat, star, items in CATS for a in items for c, s in [[cat, star]]]
 
 def ready(check):
@@ -61,12 +63,9 @@ def sa(scr, y, x, t, *args):
 def launch_term(cmd):
     if not cmd: return False
     cs = " ".join(shlex.quote(str(c)) for c in cmd)
-    if W:
-        subprocess.Popen(["start","cmd","/c",cs],shell=True); return True
+    if W: subprocess.Popen(["start","cmd","/c",cs],shell=True); return True
     t = find_term()
-    if t:
-        subprocess.Popen([t[0]]+t[1]+[cs],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-        return True
+    if t: subprocess.Popen([t[0]]+t[1]+[cs],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); return True
     return False
 
 def do_launch(scr, name, check, cmd):
@@ -93,10 +92,13 @@ def main(scr):
     curses.init_pair(1, curses.COLOR_RED, -1)
     curses.init_pair(2, curses.COLOR_GREEN, -1)
     curses.init_pair(3, curses.COLOR_YELLOW, -1)
+
     scr.nodelay(1)
-    for _ in range(8): scr.clear(); scr.refresh(); time.sleep(0.02)
+    for _ in range(6): scr.clear(); scr.refresh(); time.sleep(0.02)
     scr.nodelay(0)
     h,w = scr.getmaxyx()
+
+    # boot
     logo = ["██╗  ██╗██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗███████╗██████╗",
             "██║  ██║██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔════╝██╔══██╗",
             "███████║██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║█████╗  ██████╔╝",
@@ -114,56 +116,87 @@ def main(scr):
     idx = 0
     while True:
         scr.clear(); h,w = scr.getmaxyx()
-        sw = 24; gap = 3; gx = sw + gap
 
-        sa(scr,0,2,"AI LAUNCHER PRO  v2.0",curses.color_pair(1)|curses.A_BOLD)
-        sa(scr,0,w-10,"19 TOOLS",curses.color_pair(2))
-        for i in range(w-1): sa(scr,1,i,"═",curses.color_pair(1))
+        # header
+        R = curses.color_pair(1)
+        G = curses.color_pair(2)
+        Y = curses.color_pair(3)
+        B = curses.A_BOLD
+        for i in range(w): sa(scr,0,i,"═",R)
+        sa(scr,1,2,"AI LAUNCHER PRO  v2.0",R|B)
+        sa(scr,1,w-10,"19 TOOLS",G)
+        for i in range(w): sa(scr,2,i,"═",R)
 
-        sy = 2; gi = 0; cc = 0
+        # layout: left sidebar + right cards
+        lw = 32         # left width (line of ─)
+        sep_x = lw + 3  # column of the │ divider
+        l_inner = lw - 2  # content width inside left borders
+        # left inner starts at x=2, ends at x=lw-1 (0-indexed)
+
+        # draw vertical divider
+        for y in range(3, h-4):
+            sa(scr, y, sep_x, "│", R)
+
+        # draw right border
+        for y in range(3, h-4):
+            sa(scr, y, w-1, "│", R)
+        sa(scr, 3, lw+1, "─"*(w-lw-3), R)
+        sa(scr, h-4, lw+1, "─"*(w-lw-3), R)
+
+        # fill left sidebar categories
+        sy = 4; gi = 0
         for cat, star, items in CATS:
-            if sy > h - 5: break
-            n = len(items); hh = n + 4
-            if sy + hh + 1 > h - 3: break
-
-            sel_box = (cc == idx // 100)  # approximate category selection
-            b = curses.color_pair(2) if sel_box else curses.color_pair(1)
-            sa(scr,sy,2,f"┌──────────────────────┐",b)
-            sa(scr,sy+1,2,f"│  {cat:20s}│",curses.color_pair(1)|curses.A_BOLD)
-            sa(scr,sy+2,2,f"│  {star:20s}│",curses.color_pair(3))
-            sa(scr,sy+3,2,f"├──────────────────────┤",b)
-            for i,(name,check,_) in enumerate(items):
+            n = len(items)
+            if sy + n + 3 > h - 5: break
+            # separator line
+            for i in range(lw): sa(scr, sy-1, 2, "─", R) if sy > 4 else None
+            # category header
+            sa(scr, sy, 2, f"│  {cat:28s}│", R|B)
+            sa(scr, sy+1, 2, f"│  {star:28s}│", Y)
+            # separator
+            sa(scr, sy+2, 2, f"│{'─'*28}│", R)
+            # items
+            for i, (name, check, _) in enumerate(items):
                 r = "●" if ready(check) else "○"
-                c = curses.color_pair(2) if r else curses.color_pair(3)
-                isel = curses.A_REVERSE if gi == idx else 0
-                sa(scr,sy+4+i,2,f"│ {r} {name:20s}│",c|isel)
+                sl = curses.A_REVERSE if gi == idx else 0
+                rc = G if ready(check) else Y
+                num = gi + 1
+                txt = f"│ {num:2d} {r} {name:23s}│"
+                sa(scr, sy+3+i, 2, txt, rc|sl)
                 gi += 1
-            sa(scr,sy+4+n,2,"└──────────────────────┘",b)
+            sy += n + 3 + 1
 
-            cols = 2; bw = 22; bh = 3; gap2 = 2; sx = gx
-            for i,(name,check,cmd) in enumerate(items):
-                col = i % cols; row = i // cols
-                xx = sx + col * (bw + gap2); yy = sy + row * (bh + 1)
-                if yy + bh > h - 3: break
+        # fill right cards
+        gi = 0; cy = 4
+        for cat, star, items in CATS:
+            for i, (name, check, cmd) in enumerate(items):
+                col = i % 2; row = i // 2
+                cx = sep_x + 3 + col * 23
+                cyy = cy + row * 4
+                if cyy + 3 > h - 5: break
                 sl = (gi == idx)
                 sel = curses.A_REVERSE if sl else 0
-                num = gi + 1; rdy = ready(check); dot = "●" if rdy else "○"
+                num = gi + 1
+                rdy = ready(check); dot = "●" if rdy else "○"
                 st = "LISTO" if rdy else "FALTA"
-                sc = curses.color_pair(2) if rdy else curses.color_pair(3)
-                sa(scr,yy,xx,"┌────────────────────┐",sc|sel)
-                sa(scr,yy+1,xx,f"│ {num:2d} {name:16s}│",(curses.color_pair(2)|sel))
-                sa(scr,yy+2,xx,f"│ {star} {dot} {st} │",sc|sel)
 
-            sy += hh + 1
-            cc += 1
+                n2 = name[:16]
+                sa(scr, cyy, cx, "┌────────────────────┐", G|sel)
+                sa(scr, cyy+1, cx, f"│ {num:2d} {n2:16s}│", G|sel)
+                sa(scr, cyy+2, cx, f"│ {star} {dot} {st} │", G|sel)
+                sa(scr, cyy+3, cx, "└────────────────────┘", G|sel)
+                gi += 1
+            cy += ((len(items)+1)//2) * 4
 
-        for i in range(w-1): sa(scr,h-3,i,"─",curses.color_pair(1))
-        sa(scr,h-2,2,"↑↓ mover  ENTER lanzar  q salir",curses.color_pair(2))
+        # footer
+        for i in range(w): sa(scr, h-3, i, "═", R)
+        sa(scr, h-2, 2, "↑↓ mover  ENTER lanzar  q salir", G)
+        for i in range(w): sa(scr, h-1, i, "═", R)
+
         scr.refresh()
-
         k = scr.getch()
         if k == curses.KEY_UP and idx > 0: idx -= 1
-        elif k == curses.KEY_DOWN and idx < len(ALL) - 1: idx += 1
+        elif k == curses.KEY_DOWN and idx < len(ALL)-1: idx += 1
         elif k == ord('\n'):
             cat, star, (name, check, cmd) = ALL[idx]
             do_launch(scr, name, check, cmd)
