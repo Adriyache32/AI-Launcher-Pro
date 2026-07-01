@@ -18,38 +18,49 @@ def check_version():
 
 CATS = [
     ("TOP TIER", "★★★★★", [
-        ("Claude Code",     "npx",              [NPX, "@anthropic-ai/claude-code"]),
-        ("opencode",        str(HOME/".opencode/bin/opencode"), [str(HOME/".opencode/bin/opencode")]),
+        ("Claude Code",     ["~/.claude", "cmd:npx"],          [NPX, "@anthropic-ai/claude-code"]),
+        ("opencode",        ["~/.opencode"],                   [str(HOME/".opencode/bin/opencode")]),
     ]),
     ("BEST VALUE", "★★★★☆", [
-        ("OpenAI",          "openai",     ["openai"]),
-        ("Gemini-CLI",      "gemini-cli", ["gemini-cli"]),
-        ("xAI (Grok)",      "grok",       ["grok"]),
-        ("Ollama",          "ollama",     ["ollama","run","llama3.1"]),
+        ("OpenAI",          ["~/.openai", "cmd:openai"],       ["openai"]),
+        ("Gemini-CLI",      ["~/.gemini", "cmd:gemini-cli"],   ["gemini-cli"]),
+        ("xAI (Grok)",      ["cmd:grok"],                      ["grok"]),
+        ("Ollama",          ["~/.ollama", "cmd:ollama"],       ["ollama","run","llama3.1"]),
     ]),
     ("SOLID", "★★★☆☆", [
-        ("Cline",          "code",  ["code","--install-extension","saoudrizwan.claude-dev"]),
-        ("GitHub Copilot", "gh",    ["gh","copilot"]),
-        ("Kilo Code",      "code",  ["code","--install-extension","kilocode.kilocode"]),
-        ("Cursor IDE",     "cursor",["cursor","."]),
-        ("OpenRouter",     "openrouter",["openrouter"]),
-        ("Kiro AI",        "kiro",  ["kiro"]),
-        ("Vertex AI",      "gcloud",["gcloud"]),
+        ("Cline",          ["~/.vscode/extensions/saoudrizwan.claude-dev*", "cmd:code"],  ["code","--install-extension","saoudrizwan.claude-dev"]),
+        ("GitHub Copilot", ["~/.vscode/extensions/github.copilot*", "cmd:gh"],             ["gh","copilot"]),
+        ("Kilo Code",      ["~/.vscode/extensions/kilocode.kilocode*", "cmd:code"],        ["code","--install-extension","kilocode.kilocode"]),
+        ("Cursor IDE",     ["~/.cursor", "cmd:cursor"],        ["cursor","."]),
+        ("OpenRouter",     ["cmd:openrouter"],                  ["openrouter"]),
+        ("Kiro AI",        ["cmd:kiro"],                        ["kiro"]),
+        ("Vertex AI",      ["~/.config/gcloud", "cmd:gcloud"], ["gcloud"]),
     ]),
     ("NICHE", "★★☆☆☆", [
-        ("Nvidia NIM",     "docker",   ["docker"]),
-        ("Cloudflare AI",  "wrangler", ["wrangler"]),
-        ("Qoder",          "qoder",    ["qoder"]),
-        ("Antigravity",    "antigravity",["antigravity"]),
-        ("BytePlus",       "byteplus", ["byteplus"]),
+        ("Nvidia NIM",     ["~/.nim", "cmd:docker"],           ["docker"]),
+        ("Cloudflare AI",  ["~/.cloudflare", "cmd:wrangler"],  ["wrangler"]),
+        ("Qoder",          ["cmd:qoder"],                      ["qoder"]),
+        ("Antigravity",    ["cmd:antigravity"],                ["antigravity"]),
+        ("BytePlus",       ["cmd:byteplus"],                   ["byteplus"]),
     ]),
 ]
 
 ALL = [(c, s, a) for cat, star, items in CATS for a in items for c, s in [[cat, star]]]
 
-def ready(check):
-    if check.startswith(str(HOME)): return Path(check).exists()
-    return shutil.which(check) is not None
+def ready(checks):
+    for c in checks:
+        if c.startswith("cmd:"):
+            if shutil.which(c[4:]) is not None: return True
+        elif "*" in c:
+            p = Path(c).expanduser()
+            parent = p.parent
+            try:
+                for _ in parent.glob(p.name):
+                    return True
+            except: pass
+        else:
+            if Path(c).expanduser().exists(): return True
+    return False
 
 def find_term():
     if W: return None
