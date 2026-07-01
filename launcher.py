@@ -5,7 +5,7 @@ from pathlib import Path
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
-VERSION = "2.10.v"
+VERSION = "2.11.v"
 GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
 
 def check_version():
@@ -18,41 +18,54 @@ def check_version():
 
 CATS = [
     ("TOP TIER", "★★★★★", [
-        ("Claude Code",     "npx",              [NPX, "@anthropic-ai/claude-code"]),
-        ("opencode",        str(HOME/".opencode/bin/opencode"), [str(HOME/".opencode/bin/opencode")]),
+        ("Claude Code",     ["~/.claude", "cmd:npx"],          "LIMITADA",  [NPX, "@anthropic-ai/claude-code"]),
+        ("opencode",        ["~/.opencode"],                   "GRATIS",    [str(HOME/".opencode/bin/opencode")]),
     ]),
     ("BEST VALUE", "★★★★☆", [
-        ("OpenAI",          "openai",     ["openai"]),
-        ("Gemini-CLI",      "gemini-cli", ["gemini-cli"]),
-        ("xAI (Grok)",      "grok",       ["grok"]),
-        ("Ollama",          "ollama",     ["ollama","run","llama3.1"]),
+        ("OpenAI",          ["~/.openai", "cmd:openai"],       "PAGA",      ["openai"]),
+        ("Gemini-CLI",      ["~/.gemini", "cmd:gemini-cli"],   "GRATIS",    ["gemini-cli"]),
+        ("xAI (Grok)",      ["cmd:grok"],                      "LIMITADA",  ["grok"]),
+        ("Ollama",          ["~/.ollama", "cmd:ollama"],       "GRATIS",    ["ollama","run","llama3.1"]),
     ]),
     ("SOLID", "★★★☆☆", [
-        ("Cline",          "code",  ["code","--install-extension","saoudrizwan.claude-dev"]),
-        ("GitHub Copilot", "gh",    ["gh","copilot"]),
-        ("Kilo Code",      "code",  ["code","--install-extension","kilocode.kilocode"]),
-        ("Cursor IDE",     "cursor",["cursor","."]),
-        ("OpenRouter",     "openrouter",["openrouter"]),
-        ("Kiro AI",        "kiro",  ["kiro"]),
-        ("Vertex AI",      "gcloud",["gcloud"]),
+        ("Cline",          ["~/.vscode/extensions/saoudrizwan.claude-dev*", "cmd:code"],  "GRATIS",  ["code","--install-extension","saoudrizwan.claude-dev"]),
+        ("GitHub Copilot", ["~/.vscode/extensions/github.copilot*", "cmd:gh"],             "PAGA",    ["gh","copilot"]),
+        ("Kilo Code",      ["~/.vscode/extensions/kilocode.kilocode*", "cmd:code"],        "GRATIS",  ["code","--install-extension","kilocode.kilocode"]),
+        ("Cursor IDE",     ["~/.cursor", "cmd:cursor"],        "PAGA",    ["cursor","."]),
+        ("OpenRouter",     ["cmd:openrouter"],                  "PAGA",    ["openrouter"]),
+        ("Kiro AI",        ["cmd:kiro"],                        "PAGA",    ["kiro"]),
+        ("Vertex AI",      ["~/.config/gcloud", "cmd:gcloud"], "PAGA",    ["gcloud"]),
     ]),
     ("NICHE", "★★☆☆☆", [
-        ("Nvidia NIM",     "docker",   ["docker"]),
-        ("Cloudflare AI",  "wrangler", ["wrangler"]),
-        ("Qoder",          "qoder",    ["qoder"]),
-        ("Antigravity",    "antigravity",["antigravity"]),
-        ("BytePlus",       "byteplus", ["byteplus"]),
+        ("Nvidia NIM",     ["~/.nim", "cmd:docker"],           "LIMITADA",  ["docker"]),
+        ("Cloudflare AI",  ["~/.cloudflare", "cmd:wrangler"],  "GRATIS",    ["wrangler"]),
+        ("Qoder",          ["cmd:qoder"],                      "GRATIS",    ["qoder"]),
+        ("Antigravity",    ["cmd:antigravity"],                "GRATIS",    ["antigravity"]),
+        ("BytePlus",       ["cmd:byteplus"],                   "PAGA",      ["byteplus"]),
     ]),
 ]
 
 ALL = [(c, s, a) for cat, star, items in CATS for a in items for c, s in [[cat, star]]]
 
-def ready(check):
-    if check.startswith(str(HOME)): return Path(check).exists()
-    return shutil.which(check) is not None
+def ready(checks):
+    for c in checks:
+        if c.startswith("cmd:"):
+            if shutil.which(c[4:]) is not None: return True
+        elif "*" in c:
+            p = Path(c).expanduser()
+            try:
+                for _ in p.parent.glob(p.name):
+                    return True
+            except: pass
+        else:
+            if Path(c).expanduser().exists(): return True
+    return False
 
 def find_term():
     if W: return None
+    # Detect Termux
+    if "com.termux" in os.environ.get("PREFIX","") or os.environ.get("TERMUX_VERSION"):
+        return ("sh", ["-c"])  # run directly in Termux
     terms = [("x-terminal-emulator",["-e"]),("gnome-terminal",["--","bash","-c"]),
              ("konsole",["--hold","-e"]),("xfce4-terminal",["-e"]),("lxterminal",["-e"]),
              ("urxvt",["-e"]),("xterm",["-e"]),("alacritty",["-e"]),("kitty",["-e"]),
@@ -104,10 +117,13 @@ def main(scr):
     curses.init_pair(4, curses.COLOR_CYAN, -1)
     curses.init_pair(5, curses.COLOR_MAGENTA, -1)
     curses.init_pair(6, curses.COLOR_BLUE, -1)
+    curses.init_pair(7, curses.COLOR_WHITE, -1)
 
-    # category color mapping
-    CCOL = {"TOP TIER":1, "BEST VALUE":2, "SOLID":4, "NICHE":5}
-    CI = [CCOL[c] for c,_,items in CATS for _ in items]  # per tool index
+    # brand colors per tool (index = global index 0-17)
+    # Claude→am, opencode→mg, OpenAI→vd, Gemini→az, Grok→br, Ollama→cn
+    # Cline→rj, Copilot→am, Kilo→mg, Cursor→vd, OpenRouter→az, Kiro→mg, Vertex→az
+    # Nvidia→vd, Cloudflare→am, Qoder→cn, Antigravity→br, BytePlus→vd
+    TC = [3,5, 2,6,7,4, 1,3,5,2,6,5,6, 2,3,4,7,2]
     scr.nodelay(1)
     for _ in range(6): scr.clear(); scr.refresh(); time.sleep(0.02)
     scr.nodelay(0)
@@ -154,16 +170,16 @@ def main(scr):
             rows = (len(items)+1)//2
             for i, item in enumerate(items):
                 row = i // 2
-                card_y[gi] = vy + row*4
+                card_y[gi] = vy + row*5
                 gi += 1
-            vy += rows*4 + 1
+            vy += rows*5 + 1
 
         total_h = vy - topy
 
         # keep selected visible
         sel_vy = card_y.get(idx, topy)
         if sel_vy - scroll < topy: scroll = sel_vy - topy
-        if sel_vy - scroll + 3 > boty: scroll = sel_vy + 3 - boty
+        if sel_vy - scroll + 4 > boty: scroll = sel_vy + 4 - boty
         scroll = max(0, min(scroll, total_h - vh)) if total_h > vh else 0
 
         # draw left sidebar
@@ -173,19 +189,19 @@ def main(scr):
             vy2 = sy; sy2 = sy
             if sy2 + bh > topy - 1:
                 s1 = sy2 + bh - 1
-                for i0, (name, check, _) in enumerate(items):
+                for i0, (name, check, _, _) in enumerate(items):
                     yy = sy2 + 3 + i0
                     if yy < topy or yy > boty: continue
                     r = "●" if ready(check) else "○"
                     sl = curses.A_REVERSE if gi == idx else 0
-                    cc = curses.color_pair(CI[gi])
+                    cc = curses.color_pair(TC[gi])
                     rc = cc if ready(check) else Y
                     num = gi + 1
                     txt = f"│ {num:2d} {r} {name:23s}│"
                     sa(scr,yy,2,txt,rc|sl)
                     gi += 1
                 if sy2 >= topy and sy2 <= boty:
-                    sa(scr,sy2,2,f"│  {cat:28s}│",curses.color_pair(CCOL.get(cat,1))|B)
+                    sa(scr,sy2,2,f"│  {cat:28s}│",curses.color_pair(TC[gi])|B)
                 if sy2+1 >= topy and sy2+1 <= boty:
                     sa(scr,sy2+1,2,f"│  {star:28s}│",Y)
                 if sy2+2 >= topy and sy2+2 <= boty:
@@ -199,22 +215,24 @@ def main(scr):
         # draw right cards
         gi = 0
         for _,_,items in CATS:
-            for i, (name, check, cmd) in enumerate(items):
+            for i, (name, check, price, cmd) in enumerate(items):
                 col = i%2; row = i//2
                 vy2 = card_y[gi]
                 yy = vy2 - scroll
-                if yy < topy - 3 or yy > boty:
+                if yy < topy - 4 or yy > boty:
                     gi += 1; continue
                 sl = curses.A_REVERSE if gi == idx else 0
-                cc = curses.color_pair(CI[gi])
+                cc = curses.color_pair(TC[gi])
                 cx = sx + 3 + col*23
                 num = gi+1; rdy = ready(check)
                 dot = "●" if rdy else "○"; st = "LISTO" if rdy else "FALTA"
                 n2 = name[:16]
+                p2 = price[:18]
                 sa(scr,yy,cx,"┌────────────────────┐",cc|sl)
                 sa(scr,yy+1,cx,f"│ {num:2d} {n2:16s}│",cc|sl)
-                sa(scr,yy+2,cx,f"│ {star} {dot} {st} │",cc|sl)
-                sa(scr,yy+3,cx,"└────────────────────┘",cc|sl)
+                sa(scr,yy+2,cx,f"│ {p2:20s}│",cc|sl)
+                sa(scr,yy+3,cx,f"│ {star} {dot} {st} │",cc|sl)
+                sa(scr,yy+4,cx,"└────────────────────┘",cc|sl)
                 gi += 1
 
         for i in range(w): sa(scr,h-3,i,"═",R)
