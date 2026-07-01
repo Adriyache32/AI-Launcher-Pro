@@ -5,6 +5,16 @@ from pathlib import Path
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
+VERSION = "2.9.v"
+GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
+
+def check_version():
+    import urllib.request
+    try:
+        r = urllib.request.urlopen(GIT_VER_URL, timeout=3)
+        latest = r.read().decode("utf-8").strip()
+        return latest if latest != VERSION else None
+    except: return None
 
 CATS = [
     ("TOP TIER", "★★★★★", [
@@ -104,12 +114,14 @@ def main(scr):
         scr.clear()
         for y,l in enumerate(logo):
             sa(scr,h//2-5+y,w//2-36,l[:len(l)//6*(i+1)],curses.color_pair(1)|curses.A_BOLD)
-        sa(scr,h//2+1,w//2-10,"AI LAUNCHER PRO  v2.0",curses.color_pair(2)|curses.A_BOLD)
+        sa(scr,h//2+1,w//2-10,"AI LAUNCHER PRO",curses.color_pair(2)|curses.A_BOLD)
+        sa(scr,h//2+1,w//2+7,VERSION,curses.color_pair(3))
         scr.refresh(); time.sleep(0.05)
     sa(scr,h//2+2,w//2-5,"18 TOOLS",curses.color_pair(3))
     sa(scr,h-2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
     scr.refresh(); scr.getch()
 
+    update_avail = check_version()
     idx = 0; scroll = 0
     while True:
         scr.clear(); h,w = scr.getmaxyx()
@@ -117,7 +129,8 @@ def main(scr):
         topy = 3; boty = h-4; vh = boty - topy + 1
 
         for i in range(w): sa(scr,0,i,"═",R)
-        sa(scr,1,2,"AI LAUNCHER PRO  v2.0",R|B)
+        sa(scr,1,2,"AI LAUNCHER PRO",R|B)
+        sa(scr,1,2+len("AI LAUNCHER PRO"),f"  {VERSION}",G)
         sa(scr,1,w-10,"18 TOOLS",G)
         for i in range(w): sa(scr,2,i,"═",R)
         lw = 32; sx = lw+3  # separator x
@@ -195,7 +208,8 @@ def main(scr):
                 gi += 1
 
         for i in range(w): sa(scr,h-3,i,"═",R)
-        sa(scr,h-2,2,"↑↓ mover  ENTER lanzar  q salir",G)
+        upd = f"  Actualizar a {update_avail}" if update_avail else ""
+        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  q salir{VERSION:>10s}{upd}",G)
         for i in range(w): sa(scr,h-1,i,"═",R)
         scr.refresh()
         k = scr.getch()
