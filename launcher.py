@@ -8,7 +8,7 @@ if sys.version_info < (3, 7):
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
-VERSION = "2.16.v"
+VERSION = "2.17.v"
 GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
 GIT_LAUNCHER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/launcher.py"
 
@@ -196,6 +196,28 @@ def check_pkg_mgrs(install_cmds):
                 break
     return missing
 
+def detect_package_need():
+    PKG_BASE = f"https://github.com/Adriyache32/AI-Launcher-Pro/releases/download/{VERSION}/"
+    if SP.get("ios"):
+        return ("iOS", "iOS (proximamente)", PKG_BASE + f"AI-Launcher-iOS-{VERSION}.zip",
+                "iOS detectado. Package para iPhone/iPad en desarrollo.")
+    if SP.get("termux"):
+        return ("Termux", "Termux setup", PKG_BASE + f"AI-Launcher-Termux-{VERSION}.zip",
+                "Package oficial para Termux. Instala dependencias y deja 'open-ai' listo.")
+    if W:
+        try:
+            import _curses
+        except ImportError:
+            return ("Windows", "Windows + curses", PKG_BASE + f"AI-Launcher-Windows-{VERSION}.zip",
+                    "Windows sin curses detectado. El package instala Python y windows-curses automaticamente.")
+    if SP["ram_gb"] < 1 or SP["cpu_cores"] < 2:
+        return ("Legacy", "Old PC / Legacy", PKG_BASE + f"AI-Launcher-Legacy-{VERSION}.zip",
+                f"PC con pocos recursos (RAM: {SP['ram_gb']}GB, CPU: {SP['cpu_cores']} nucleos). Package Legacy optimizado.")
+    if SP["arch"] in ("armv7l","armv6l","i586","i686"):
+        return ("Legacy", "Old PC / Legacy", PKG_BASE + f"AI-Launcher-Legacy-{VERSION}.zip",
+                f"Arquitectura {SP['arch']} detectada. Package Legacy para hardware antiguo.")
+    return None
+
 def lt(cmd):
     if not cmd: return False
     s = " ".join(shlex.quote(str(c)) for c in cmd)
@@ -319,6 +341,7 @@ def main(scr):
     scr.refresh(); scr.getch()
 
     update_avail = check_version()
+    pkg_need = detect_package_need()
     idx = 0; scroll = 0
     bw = 26; stride = bw + 1  # card box width, step between cols
     while True:
@@ -430,8 +453,9 @@ def main(scr):
                 gi += 1
 
         for i in range(w): sa(scr,h-3,i,"═",R)
-        upd = f"  ▲ {update_avail}" if update_avail else ""
-        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  i:info  u:update  q salir  {VERSION}{upd}",G)
+        pkg_tag = f" [p] {pkg_need[1]}" if pkg_need else ""
+        upd = f" ▲ {update_avail}" if update_avail else ""
+        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  i:info  u:update{pkg_tag}  q salir  {VERSION}{upd}",G)
         for i in range(w): sa(scr,h-1,i,"═",R)
         scr.refresh()
         k = scr.getch()
@@ -457,6 +481,15 @@ def main(scr):
                 popup(scr, "\n".join(lines))
             else:
                 dl(scr, name, check, cmd)
+        elif k == ord('p') and pkg_need:
+            _, label, url, reason = pkg_need
+            lines = [f"📦 Package recomendado: {label}"]
+            lines.append("")
+            lines.append(f" {reason}")
+            lines.append("")
+            lines.append(f" URL:")
+            lines.append(f" {url}")
+            popup(scr, "\n".join(lines))
         elif k == ord('u'):
             if do_update(scr): return
         elif k == ord('q'): break
