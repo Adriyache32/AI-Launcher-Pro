@@ -129,11 +129,11 @@ def main(scr):
         R = curses.color_pair(1); G = curses.color_pair(2); Y = curses.color_pair(3); B = curses.A_BOLD
         topy = 3; boty = h-4; vh = boty - topy + 1
 
-        sa(scr,0,0,"╔"+"═"*(w-2)+"╗",R)
+        for i in range(w): sa(scr,0,i,"─",R)
         tit = f"  AI LAUNCHER PRO  {VERSION}  "
         sa(scr,1,(w-len(tit))//2,tit,R|B)
         sa(scr,1,2,f"◆ {len(ALL)} TOOLS",G)
-        sa(scr,2,0,"╚"+"═"*(w-2)+"╝",R)
+        for i in range(w): sa(scr,2,i,"─",R)
         lw = 32; sx = lw+3  # separator x
         for y in range(topy, boty+1): sa(scr,y,sx,"│",R)
         for y in range(topy, boty+1): sa(scr,y,w-1,"│",R)
