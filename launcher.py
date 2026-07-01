@@ -114,10 +114,11 @@ def main(scr):
         scr.clear()
         for y,l in enumerate(logo):
             sa(scr,h//2-5+y,w//2-36,l[:len(l)//6*(i+1)],curses.color_pair(1)|curses.A_BOLD)
-        sa(scr,h//2+1,w//2-10,"AI LAUNCHER PRO",curses.color_pair(2)|curses.A_BOLD)
-        sa(scr,h//2+1,w//2+7,VERSION,curses.color_pair(3))
+        t = "AI LAUNCHER PRO"
+        sa(scr,h//2+1,w//2-len(t)//2,t,curses.color_pair(2)|curses.A_BOLD)
+        sa(scr,h//2+1,w//2+len(t)//2+2,VERSION,curses.color_pair(3))
         scr.refresh(); time.sleep(0.05)
-    sa(scr,h//2+2,w//2-5,"18 TOOLS",curses.color_pair(3))
+    sa(scr,h//2+2,w//2-4,f"{len(ALL)} TOOLS",curses.color_pair(3))
     sa(scr,h-2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
     scr.refresh(); scr.getch()
 
@@ -128,11 +129,11 @@ def main(scr):
         R = curses.color_pair(1); G = curses.color_pair(2); Y = curses.color_pair(3); B = curses.A_BOLD
         topy = 3; boty = h-4; vh = boty - topy + 1
 
-        for i in range(w): sa(scr,0,i,"═",R)
-        sa(scr,1,2,"AI LAUNCHER PRO",R|B)
-        sa(scr,1,2+len("AI LAUNCHER PRO"),f"  {VERSION}",G)
-        sa(scr,1,w-10,"18 TOOLS",G)
-        for i in range(w): sa(scr,2,i,"═",R)
+        sa(scr,0,0,"╔"+"═"*(w-2)+"╗",R)
+        tit = f"  AI LAUNCHER PRO  {VERSION}  "
+        sa(scr,1,(w-len(tit))//2,tit,R|B)
+        sa(scr,1,2,f"◆ {len(ALL)} TOOLS",G)
+        sa(scr,2,0,"╚"+"═"*(w-2)+"╝",R)
         lw = 32; sx = lw+3  # separator x
         for y in range(topy, boty+1): sa(scr,y,sx,"│",R)
         for y in range(topy, boty+1): sa(scr,y,w-1,"│",R)
@@ -208,8 +209,8 @@ def main(scr):
                 gi += 1
 
         for i in range(w): sa(scr,h-3,i,"═",R)
-        upd = f"  Actualizar a {update_avail}" if update_avail else ""
-        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  q salir{VERSION:>10s}{upd}",G)
+        upd = f"  ▲ {update_avail}" if update_avail else ""
+        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  q salir  {VERSION}{upd}",G)
         for i in range(w): sa(scr,h-1,i,"═",R)
         scr.refresh()
         k = scr.getch()
