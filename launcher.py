@@ -218,6 +218,11 @@ def detect_package_need():
                 f"Arquitectura {SP['arch']} detectada. Package Legacy para hardware antiguo.")
     return None
 
+PKG_EXTRAS = []
+if SP["os"] == "linux":
+    PKG_EXTRAS.append(("Linux Enhancement", PKG_BASE + "AI-Launcher-Linux-Enhancement-v2.17.v.zip",
+                       "Mejoras opcionales: desktop, auto-completion, aliases, temas, systemd, comandos extra"))
+
 def lt(cmd):
     if not cmd: return False
     s = " ".join(shlex.quote(str(c)) for c in cmd)
@@ -454,8 +459,9 @@ def main(scr):
 
         for i in range(w): sa(scr,h-3,i,"═",R)
         pkg_tag = f" [p] {pkg_need[1]}" if pkg_need else ""
+        ext_tag = " [e] extras" if PKG_EXTRAS else ""
         upd = f" ▲ {update_avail}" if update_avail else ""
-        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  i:info  u:update{pkg_tag}  q salir  {VERSION}{upd}",G)
+        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  i:info  u:update{pkg_tag}{ext_tag}  q salir  {VERSION}{upd}",G)
         for i in range(w): sa(scr,h-1,i,"═",R)
         scr.refresh()
         k = scr.getch()
@@ -489,6 +495,14 @@ def main(scr):
             lines.append("")
             lines.append(f" URL:")
             lines.append(f" {url}")
+            popup(scr, "\n".join(lines))
+        elif k == ord('e') and PKG_EXTRAS:
+            lines = ["📦 Packages opcionales:"]
+            for label, url, desc in PKG_EXTRAS:
+                lines.append("")
+                lines.append(f" {label}")
+                lines.append(f" {desc}")
+                lines.append(f" {url}")
             popup(scr, "\n".join(lines))
         elif k == ord('u'):
             if do_update(scr): return
