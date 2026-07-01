@@ -9,7 +9,7 @@ NPX = "npx.cmd" if W else "npx"
 CATS = [
     ("TOP TIER", "★★★★★", [
         ("Claude Code",     "npx",              [NPX, "@anthropic-ai/claude-code"]),
-        ("TU (opencode)",   str(HOME/".opencode/bin/opencode"), [str(HOME/".opencode/bin/opencode")]),
+        ("opencode",        str(HOME/".opencode/bin/opencode"), [str(HOME/".opencode/bin/opencode")]),
     ]),
     ("BEST VALUE", "★★★★☆", [
         ("OpenAI",          "openai",     ["openai"]),
@@ -47,43 +47,43 @@ def find_term():
              ("konsole",["--hold","-e"]),("xfce4-terminal",["-e"]),("lxterminal",["-e"]),
              ("urxvt",["-e"]),("xterm",["-e"]),("alacritty",["-e"]),("kitty",["-e"]),
              ("foot",["-e"]),("wezterm",["-e"])]
-    for exe, flags in terms:
-        if shutil.which(exe): return (exe, flags)
+    for e, f in terms:
+        if shutil.which(e): return (e, f)
     return None
 
-def sa(scr, y, x, t, *args):
+def sa(scr, y, x, t, *a):
     try:
         my, mx = scr.getmaxyx()
         if y<0 or y>=my or x<0 or x>=mx: return
         if x+len(t)>mx: t = t[:mx-x]
-        if t: scr.addstr(y, x, t, *args)
+        if t: scr.addstr(y, x, t, *a)
     except: pass
 
-def launch_term(cmd):
+def lt(cmd):
     if not cmd: return False
-    cs = " ".join(shlex.quote(str(c)) for c in cmd)
-    if W: subprocess.Popen(["start","cmd","/c",cs],shell=True); return True
+    s = " ".join(shlex.quote(str(c)) for c in cmd)
+    if W: subprocess.Popen(["start","cmd","/c",s],shell=True); return True
     t = find_term()
-    if t: subprocess.Popen([t[0]]+t[1]+[cs],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); return True
+    if t: subprocess.Popen([t[0]]+t[1]+[s],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); return True
     return False
 
-def do_launch(scr, name, check, cmd):
-    h,w = scr.getmaxyx(); mid = h//2
+def dl(scr, name, check, cmd):
+    h,w = scr.getmaxyx(); m = h//2
     if not cmd or (len(cmd)==1 and cmd[0] in ("python","python3")):
         scr.clear()
-        sa(scr,mid-1,w//2-len(f"> {name}")//2,f"> {name}",curses.color_pair(1)|curses.A_BOLD)
+        sa(scr,m-1,w//2-len(f"> {name}")//2,f"> {name}",curses.color_pair(1)|curses.A_BOLD)
         pn = name.lower().replace(" ","").replace("(","").replace(")","")
-        sa(scr,mid+1,w//2-18,f"pip install {pn}  (si aplica)")
+        sa(scr,m+1,w//2-18,f"pip install {pn}") if 1 else None
         sa(scr,h-2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
         scr.refresh(); scr.getch(); return
     scr.clear()
-    sa(scr,mid-1,w//2-len(f"> Abriendo {name}")//2,f"> Abriendo {name}",curses.color_pair(1)|curses.A_BOLD)
-    sa(scr,mid+1,w//2-12,"Nueva terminal",curses.color_pair(2))
+    sa(scr,m-1,w//2-len(f"> Abriendo {name}")//2,f"> Abriendo {name}",curses.color_pair(1)|curses.A_BOLD)
+    sa(scr,m+1,w//2-12,"Nueva terminal",curses.color_pair(2))
     scr.refresh(); time.sleep(0.3)
-    if not launch_term(cmd):
+    if not lt(cmd):
         curses.endwin(); subprocess.run(cmd); curses.doupdate()
     else:
-        sa(scr,mid+2,w//2-15,"Lanzado, volviendo...",curses.color_pair(2))
+        sa(scr,m+2,w//2-15,"Lanzado",curses.color_pair(2))
         scr.refresh(); time.sleep(0.3)
 
 def main(scr):
@@ -91,13 +91,10 @@ def main(scr):
     curses.init_pair(1, curses.COLOR_RED, -1)
     curses.init_pair(2, curses.COLOR_GREEN, -1)
     curses.init_pair(3, curses.COLOR_YELLOW, -1)
-
     scr.nodelay(1)
     for _ in range(6): scr.clear(); scr.refresh(); time.sleep(0.02)
     scr.nodelay(0)
     h,w = scr.getmaxyx()
-
-    # boot
     logo = ["██╗  ██╗██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗███████╗██████╗",
             "██║  ██║██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔════╝██╔══██╗",
             "███████║██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║█████╗  ██████╔╝",
@@ -113,93 +110,100 @@ def main(scr):
     sa(scr,h-2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
     scr.refresh(); scr.getch()
 
-    idx = 0
+    idx = 0; scroll = 0
     while True:
         scr.clear(); h,w = scr.getmaxyx()
+        R = curses.color_pair(1); G = curses.color_pair(2); Y = curses.color_pair(3); B = curses.A_BOLD
+        topy = 3; boty = h-4; vh = boty - topy + 1
 
-        # header
-        R = curses.color_pair(1)
-        G = curses.color_pair(2)
-        Y = curses.color_pair(3)
-        B = curses.A_BOLD
         for i in range(w): sa(scr,0,i,"═",R)
         sa(scr,1,2,"AI LAUNCHER PRO  v2.0",R|B)
         sa(scr,1,w-10,"18 TOOLS",G)
         for i in range(w): sa(scr,2,i,"═",R)
+        lw = 32; sx = lw+3  # separator x
+        for y in range(topy, boty+1): sa(scr,y,sx,"│",R)
+        for y in range(topy, boty+1): sa(scr,y,w-1,"│",R)
+        sa(scr,topy,sx+1,"─"*(w-sx-3),R)
+        sa(scr,boty,sx+1,"─"*(w-sx-3),R)
 
-        # layout: left sidebar + right cards
-        lw = 32         # left width (line of ─)
-        sep_x = lw + 3  # column of the │ divider
-        l_inner = lw - 2  # content width inside left borders
-        # left inner starts at x=2, ends at x=lw-1 (0-indexed)
-
-        # draw vertical divider
-        for y in range(3, h-4):
-            sa(scr, y, sep_x, "│", R)
-
-        # draw right border
-        for y in range(3, h-4):
-            sa(scr, y, w-1, "│", R)
-        sa(scr, 3, lw+1, "─"*(w-lw-3), R)
-        sa(scr, h-4, lw+1, "─"*(w-lw-3), R)
-
-        # fill left sidebar categories
-        sy = 4; gi = 0
-        for cat, star, items in CATS:
-            n = len(items)
-            if sy + n + 3 > h - 5: break
-            # separator line
-            for i in range(lw): sa(scr, sy-1, 2, "─", R) if sy > 4 else None
-            # category header
-            sa(scr, sy, 2, f"│  {cat:28s}│", R|B)
-            sa(scr, sy+1, 2, f"│  {star:28s}│", Y)
-            # separator
-            sa(scr, sy+2, 2, f"│{'─'*28}│", R)
-            # items
-            for i, (name, check, _) in enumerate(items):
-                r = "●" if ready(check) else "○"
-                sl = curses.A_REVERSE if gi == idx else 0
-                rc = G if ready(check) else Y
-                num = gi + 1
-                txt = f"│ {num:2d} {r} {name:23s}│"
-                sa(scr, sy+3+i, 2, txt, rc|sl)
+        # precompute card positions for scroll
+        card_y = {}  # gi -> virtual y
+        vy = topy; gi = 0
+        for _,_,items in CATS:
+            rows = (len(items)+1)//2
+            for i, item in enumerate(items):
+                row = i // 2
+                card_y[gi] = vy + row*4
                 gi += 1
-            sy += n + 3 + 1
+            vy += rows*4 + 1
 
-        # fill right cards
-        gi = 0; cy = 4
+        total_h = vy - topy
+
+        # keep selected visible
+        sel_vy = card_y.get(idx, topy)
+        if sel_vy - scroll < topy: scroll = sel_vy - topy
+        if sel_vy - scroll + 3 > boty: scroll = sel_vy + 3 - boty
+        scroll = max(0, min(scroll, total_h - vh)) if total_h > vh else 0
+
+        # draw left sidebar
+        sy = topy - scroll; gi = 0
         for cat, star, items in CATS:
+            n = len(items); bh = n + 4
+            vy2 = sy; sy2 = sy
+            if sy2 + bh > topy - 1:
+                s1 = sy2 + bh - 1
+                for i0, (name, check, _) in enumerate(items):
+                    yy = sy2 + 3 + i0
+                    if yy < topy or yy > boty: continue
+                    r = "●" if ready(check) else "○"
+                    sl = curses.A_REVERSE if gi == idx else 0
+                    rc = G if ready(check) else Y
+                    num = gi + 1
+                    txt = f"│ {num:2d} {r} {name:23s}│"
+                    sa(scr,yy,2,txt,rc|sl)
+                    gi += 1
+                if sy2 >= topy and sy2 <= boty:
+                    sa(scr,sy2,2,f"│  {cat:28s}│",R|B)
+                if sy2+1 >= topy and sy2+1 <= boty:
+                    sa(scr,sy2+1,2,f"│  {star:28s}│",Y)
+                if sy2+2 >= topy and sy2+2 <= boty:
+                    sa(scr,sy2+2,2,f"│{'─'*28}│",R)
+                if sy2-1 >= topy and sy2-1 <= boty and sy2 > topy:
+                    sa(scr,sy2-1,2,"─"*lw,R)
+            else:
+                gi += n
+            sy += bh + 1
+
+        # draw right cards
+        gi = 0
+        for _,_,items in CATS:
             for i, (name, check, cmd) in enumerate(items):
-                col = i % 2; row = i // 2
-                cx = sep_x + 3 + col * 23
-                cyy = cy + row * 4
-                if cyy + 3 > h - 5: break
-                sl = (gi == idx)
-                sel = curses.A_REVERSE if sl else 0
-                num = gi + 1
-                rdy = ready(check); dot = "●" if rdy else "○"
-                st = "LISTO" if rdy else "FALTA"
-
+                col = i%2; row = i//2
+                vy2 = card_y[gi]
+                yy = vy2 - scroll
+                if yy < topy - 3 or yy > boty:
+                    gi += 1; continue
+                sl = curses.A_REVERSE if gi == idx else 0
+                cx = sx + 3 + col*23
+                num = gi+1; rdy = ready(check)
+                dot = "●" if rdy else "○"; st = "LISTO" if rdy else "FALTA"
                 n2 = name[:16]
-                sa(scr, cyy, cx, "┌────────────────────┐", G|sel)
-                sa(scr, cyy+1, cx, f"│ {num:2d} {n2:16s}│", G|sel)
-                sa(scr, cyy+2, cx, f"│ {star} {dot} {st} │", G|sel)
-                sa(scr, cyy+3, cx, "└────────────────────┘", G|sel)
+                sa(scr,yy,cx,"┌────────────────────┐",G|sl)
+                sa(scr,yy+1,cx,f"│ {num:2d} {n2:16s}│",G|sl)
+                sa(scr,yy+2,cx,f"│ {star} {dot} {st} │",G|sl)
+                sa(scr,yy+3,cx,"└────────────────────┘",G|sl)
                 gi += 1
-            cy += ((len(items)+1)//2) * 4
 
-        # footer
-        for i in range(w): sa(scr, h-3, i, "═", R)
-        sa(scr, h-2, 2, "↑↓ mover  ENTER lanzar  q salir", G)
-        for i in range(w): sa(scr, h-1, i, "═", R)
-
+        for i in range(w): sa(scr,h-3,i,"═",R)
+        sa(scr,h-2,2,"↑↓ mover  ENTER lanzar  q salir",G)
+        for i in range(w): sa(scr,h-1,i,"═",R)
         scr.refresh()
         k = scr.getch()
         if k == curses.KEY_UP and idx > 0: idx -= 1
         elif k == curses.KEY_DOWN and idx < len(ALL)-1: idx += 1
         elif k == ord('\n'):
             cat, star, (name, check, cmd) = ALL[idx]
-            do_launch(scr, name, check, cmd)
+            dl(scr, name, check, cmd)
         elif k == ord('q'): break
 
 def mw():
