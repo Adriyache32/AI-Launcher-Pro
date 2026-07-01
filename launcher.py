@@ -5,7 +5,7 @@ from pathlib import Path
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
-VERSION = "2.14.v"
+VERSION = "2.15.v"
 GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
 GIT_LAUNCHER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/launcher.py"
 
@@ -70,7 +70,7 @@ def detect_specs():
     return s
 
 def compatible(specs, reqs):
-    if specs["arch"] != "x86_64" and reqs.get("arch","x86_64")=="x86_64":
+    if "arch" in reqs and specs["arch"] != reqs["arch"]:
         return (False, f"Arq: {specs['arch']} no compatible")
     if reqs.get("ram",0) > 0 and specs["ram_gb"] < reqs["ram"]:
         return (False, f"RAM: {specs['ram_gb']}GB < {reqs['ram']}GB")
@@ -139,7 +139,7 @@ def ready(checks):
 def find_term():
     if W: return None
     if "com.termux" in os.environ.get("PREFIX","") or os.environ.get("TERMUX_VERSION"):
-        return ("sh", ["-c"])
+        return None
     terms = [("x-terminal-emulator",["-e"]),("gnome-terminal",["--","bash","-c"]),
              ("konsole",["--hold","-e"]),("xfce4-terminal",["-e"]),("lxterminal",["-e"]),
              ("urxvt",["-e"]),("xterm",["-e"]),("alacritty",["-e"]),("kitty",["-e"]),
