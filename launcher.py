@@ -104,10 +104,11 @@ def main(scr):
     curses.init_pair(4, curses.COLOR_CYAN, -1)
     curses.init_pair(5, curses.COLOR_MAGENTA, -1)
     curses.init_pair(6, curses.COLOR_BLUE, -1)
-
-    # category color mapping
-    CCOL = {"TOP TIER":1, "BEST VALUE":2, "SOLID":4, "NICHE":5}
-    CI = [CCOL[c] for c,_,items in CATS for _ in items]  # per tool index
+    curses.init_pair(7, curses.COLOR_WHITE, -1)
+    # brand colors: Claude→am, opencode→mg, OpenAI→vd, Gemini→az, Grok→br, Ollama→cn
+    # Cline→rj, Copilot→am, Kilo→mg, Cursor→vd, OpenRouter→az, Kiro→mg, Vertex→az
+    # Nvidia→vd, Cloudflare→am, Qoder→cn, Antigravity→br, BytePlus→vd
+    TC = [3,5, 2,6,7,4, 1,3,5,2,6,5,6, 2,3,4,7,2]
     scr.nodelay(1)
     for _ in range(6): scr.clear(); scr.refresh(); time.sleep(0.02)
     scr.nodelay(0)
@@ -178,14 +179,14 @@ def main(scr):
                     if yy < topy or yy > boty: continue
                     r = "●" if ready(check) else "○"
                     sl = curses.A_REVERSE if gi == idx else 0
-                    cc = curses.color_pair(CI[gi])
+                    cc = curses.color_pair(TC[gi])
                     rc = cc if ready(check) else Y
                     num = gi + 1
                     txt = f"│ {num:2d} {r} {name:23s}│"
                     sa(scr,yy,2,txt,rc|sl)
                     gi += 1
                 if sy2 >= topy and sy2 <= boty:
-                    sa(scr,sy2,2,f"│  {cat:28s}│",curses.color_pair(CCOL.get(cat,1))|B)
+                    sa(scr,sy2,2,f"│  {cat:28s}│",R|B)
                 if sy2+1 >= topy and sy2+1 <= boty:
                     sa(scr,sy2+1,2,f"│  {star:28s}│",Y)
                 if sy2+2 >= topy and sy2+2 <= boty:
@@ -206,7 +207,7 @@ def main(scr):
                 if yy < topy - 3 or yy > boty:
                     gi += 1; continue
                 sl = curses.A_REVERSE if gi == idx else 0
-                cc = curses.color_pair(CI[gi])
+                cc = curses.color_pair(TC[gi])
                 cx = sx + 3 + col*23
                 num = gi+1; rdy = ready(check)
                 dot = "●" if rdy else "○"; st = "LISTO" if rdy else "FALTA"
