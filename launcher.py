@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import curses, time, subprocess, os, shutil, shlex, platform, sys, json
-import importlib
+import importlib, zipfile, urllib.request
 from pathlib import Path
 
 if sys.version_info < (3, 7):
@@ -223,6 +223,45 @@ def detect_package_need():
         return ("Legacy", "🖥️ Old PC / Legacy", PKG_BASE + f"AI-Launcher-Legacy-{VERSION}.zip",
                 f"Arquitectura {SP['arch']} detectada. Package Legacy para hardware antiguo.")
     return None
+
+def download_install_package(scr, url, label):
+    h,w = scr.getmaxyx(); m = h//2
+    tmp = Path("/tmp") / f"ai-launcher-pkg"
+    tmp.mkdir(parents=True, exist_ok=True)
+    zip_path = tmp / "package.zip"
+    scr.clear()
+    sa(scr,m-2,w//2-18,"  Descargando package...",curses.color_pair(3)|curses.A_BOLD)
+    sa(scr,m,w//2-20,f"{label}",curses.color_pair(2))
+    scr.refresh()
+    try:
+        urllib.request.urlretrieve(url, zip_path)
+        sa(scr,m+1,w//2-15,"Extrayendo...",curses.color_pair(2))
+        scr.refresh()
+        extract_to = tmp / "extracted"
+        if extract_to.exists(): shutil.rmtree(extract_to)
+        with zipfile.ZipFile(zip_path) as z:
+            z.extractall(extract_to)
+        scripts = list(extract_to.glob("install.sh")) + list(extract_to.glob("setup.sh")) + list(extract_to.glob("*.sh"))
+        if scripts:
+            sa(scr,m+2,w//2-18,"Ejecutando instalador...",curses.color_pair(2))
+            scr.refresh()
+            subprocess.run(["bash", str(scripts[0])], cwd=extract_to)
+        else:
+            dst = HOME/".ai-launcher-pkg"
+            dst.mkdir(parents=True, exist_ok=True)
+            for f in extract_to.iterdir():
+                shutil.copy2(f, dst/f.name)
+        sa(scr,m+3,w//2-14,"Package instalado!",curses.color_pair(2)|curses.A_BOLD)
+        sa(scr,m+5,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
+        scr.refresh(); scr.getch()
+        return True
+    except Exception as e:
+        scr.clear()
+        sa(scr,m-2,w//2-15,"  Error al descargar",curses.color_pair(1)|curses.A_BOLD)
+        sa(scr,m,w//2-len(str(e))//2,str(e)[:50],curses.color_pair(3))
+        sa(scr,m+2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
+        scr.refresh(); scr.getch()
+        return False
 
 PKG_EXTRAS = []
 if SP["os"] == "linux":
@@ -518,17 +557,58 @@ def main(scr):
             lines.append("")
             lines.append(f" {reason}")
             lines.append("")
-            lines.append(f" URL:")
             lines.append(f" {url}")
-            popup(scr, "\n".join(lines))
+            lines.append("")
+            lines.append(" d: descargar e instalar")
+            lines.append(" q: cerrar")
+            h2,w2 = scr.getmaxyx()
+            mh = 4 + len(lines); mw = 60
+            y2 = h2//2 - mh//2; x2 = w2//2 - mw//2
+            win = curses.newwin(mh, mw, y2, x2)
+            win.box()
+            for i, txt in enumerate(lines):
+                if 1+i < mh-1:
+                    win.addstr(1+i, 2, txt[:mw-4])
+            win.refresh()
+            while True:
+                k2 = win.getch()
+                if k2 == ord('d'):
+                    del win; scr.touchwin(scr); scr.refresh()
+                    download_install_package(scr, url, label)
+                    break
+                if k2 in (ord('q'), 27):
+                    break
+            del win; scr.touchwin(scr); scr.refresh()
         elif k == ord('e') and PKG_EXTRAS:
             lines = ["📦 Packages opcionales:"]
-            for label, url, desc in PKG_EXTRAS:
+            for i, (label, url, desc) in enumerate(PKG_EXTRAS):
                 lines.append("")
-                lines.append(f" {label}")
-                lines.append(f" {desc}")
-                lines.append(f" {url}")
-            popup(scr, "\n".join(lines))
+                lines.append(f" {i+1}. {label}")
+                lines.append(f"    {desc}")
+                lines.append(f"    {url}")
+            lines.append("")
+            lines.append(" [1-5] descargar   q: cerrar")
+            h2,w2 = scr.getmaxyx()
+            mh = 4 + len(lines); mw = 64
+            y2 = h2//2 - mh//2; x2 = w2//2 - mw//2
+            win = curses.newwin(mh, mw, y2, x2)
+            win.box()
+            for i, txt in enumerate(lines):
+                if 1+i < mh-1:
+                    win.addstr(1+i, 2, txt[:mw-4])
+            win.refresh()
+            while True:
+                k2 = win.getch()
+                if ord('1') <= k2 <= ord('9'):
+                    n = k2 - ord('1')
+                    if n < len(PKG_EXTRAS):
+                        elabel, eurl, edesc = PKG_EXTRAS[n]
+                        del win; scr.touchwin(scr); scr.refresh()
+                        download_install_package(scr, eurl, elabel)
+                        break
+                if k2 in (ord('q'), 27):
+                    break
+            del win; scr.touchwin(scr); scr.refresh()
         elif k == ord('u'):
             if do_update(scr): return
         elif k == ord('q'): break
