@@ -9,16 +9,19 @@ if sys.version_info < (3, 7):
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
-VERSION = "2.18.v"
+VERSION = "2.19.v"
 GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
 GIT_LAUNCHER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/launcher.py"
+
+def _ver_tuple(v):
+    return tuple(int(x) for x in v.strip("v").rstrip(".").split(".") if x.isdigit())
 
 def check_version():
     import urllib.request
     try:
         r = urllib.request.urlopen(GIT_VER_URL, timeout=3)
         latest = r.read().decode("utf-8").strip()
-        return latest if latest != VERSION else None
+        return latest if _ver_tuple(latest) > _ver_tuple(VERSION) else None
     except: return None
 
 def do_update(scr):
@@ -115,7 +118,7 @@ RATINGS = load_ratings()
 CATS = [
     ("TOP TIER", "★★★★★", [
         ("Claude Code",     ["~/.claude","cmd:npx"],          "LIMITADA",  {"ram":8,"cpu_cores":4},   ["programar","estudiar","diario"],       [NPX,"@anthropic-ai/claude-code"],            ["npm install -g @anthropic-ai/claude-code"]),
-        ("opencode",        ["~/.opencode"],                   "GRATIS",    {"ram":0,"cpu_cores":0},   ["programar","estudiar"],               [str(HOME/".opencode/bin/opencode")],          ["curl -fsSL https://opencode.ai/install.sh | sh"]),
+        ("opencode",        ["cmd:opencode"],                    "GRATIS",    {"ram":0,"cpu_cores":0},   ["programar","estudiar"],               ["opencode"],          ["curl -fsSL https://opencode.ai/install.sh | sh"]),
     ]),
     ("BEST VALUE", "★★★★☆", [
         ("OpenAI",          ["~/.openai","cmd:openai"],       "PAGA",      {"ram":0,"cpu_cores":0},   ["programar","estudiar","diario","general"],  ["openai"],       ["pip install openai"]),
@@ -245,7 +248,10 @@ def download_install_package(scr, url, label):
         if scripts:
             sa(scr,m+2,w//2-18,"Ejecutando instalador...",curses.color_pair(2))
             scr.refresh()
-            subprocess.run(["bash", str(scripts[0])], cwd=extract_to)
+            shell = "bash" if shutil.which("bash") else "sh"
+            r = subprocess.run([shell, str(scripts[0])], cwd=extract_to)
+            if r.returncode != 0:
+                raise RuntimeError(f"Instalador fallo (codigo {r.returncode})")
         else:
             dst = HOME/".ai-launcher-pkg"
             dst.mkdir(parents=True, exist_ok=True)
@@ -265,21 +271,21 @@ def download_install_package(scr, url, label):
 
 PKG_EXTRAS = []
 if SP["os"] == "linux":
-    PKG_EXTRAS.append(("🐧 Linux Enhancement", PKG_BASE + "AI-Launcher-Linux-Enhancement-v2.18.v.zip",
+    PKG_EXTRAS.append(("🐧 Linux Enhancement", PKG_BASE + f"AI-Launcher-Linux-Enhancement-{VERSION}.zip",
                        "Mejoras opcionales: desktop, auto-completion, aliases, temas, systemd, comandos extra"))
-    PKG_EXTRAS.append(("🪟 Windows", PKG_BASE + "AI-Launcher-Windows-v2.18.v.zip",
+    PKG_EXTRAS.append(("🪟 Windows", PKG_BASE + f"AI-Launcher-Windows-{VERSION}.zip",
                        "Instalador para Windows con Python + curses automatico"))
-    PKG_EXTRAS.append(("📱 Termux", PKG_BASE + "AI-Launcher-Termux-v2.18.v.zip",
+    PKG_EXTRAS.append(("📱 Termux", PKG_BASE + f"AI-Launcher-Termux-{VERSION}.zip",
                        "Setup para Termux (Android)"))
-    PKG_EXTRAS.append(("🖥️ Legacy", PKG_BASE + "AI-Launcher-Legacy-v2.18.v.zip",
+    PKG_EXTRAS.append(("🖥️ Legacy", PKG_BASE + f"AI-Launcher-Legacy-{VERSION}.zip",
                        "PC viejos, modo texto sin curses"))
-    PKG_EXTRAS.append(("🍏 iOS", PKG_BASE + "AI-Launcher-iOS-v2.18.v.zip",
+    PKG_EXTRAS.append(("🍏 iOS", PKG_BASE + f"AI-Launcher-iOS-{VERSION}.zip",
                        "Package para iPhone/iPad (proximamente)"))
 
 def lt(cmd):
     if not cmd: return False
     s = " ".join(shlex.quote(str(c)) for c in cmd)
-    if W: subprocess.Popen(["start","cmd","/c",s],shell=True); return True
+    if W: subprocess.Popen(['cmd','/c','start','"AI Launcher Pro"','cmd','/c',s]); return True
     t = find_term()
     if t: subprocess.Popen([t[0]]+t[1]+[s],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); return True
     return False
@@ -355,10 +361,12 @@ def dl(scr, name, check, cmd):
     sa(scr,m+1,w//2-12,"Nueva terminal",curses.color_pair(2))
     scr.refresh(); time.sleep(0.3)
     if not lt(cmd):
-        curses.endwin(); subprocess.run(cmd); curses.doupdate()
+        curses.endwin(); subprocess.run(cmd)
+        try: curses.reset_prog_mode(); scr.refresh()
+        except: pass
     else:
         sa(scr,m+2,w//2-15,"Lanzado",curses.color_pair(2))
-        scr.refresh(); time.sleep(0.3)
+        scr.refresh(); time.sleep(0.5)
 
 def main(scr):
     curses.curs_set(0); curses.use_default_colors()
@@ -451,7 +459,7 @@ def main(scr):
                 if sy2+1 >= topy and sy2+1 <= boty:
                     sa(scr,sy2+1,2,f"│  {star:28s}│",Y)
                 if sy2+2 >= topy and sy2+2 <= boty:
-                    sa(scr,sy2+2,2,f"│{'─'*28}│",R)
+                    sa(scr,sy2+2,2,f"│{'─'*lw}│",R)
                 if sy2-1 >= topy and sy2-1 <= boty and sy2 > topy:
                     sa(scr,sy2-1,2,"─"*lw,R)
             else:
@@ -666,7 +674,6 @@ def mw():
                 import importlib as _il
                 _il.import_module('curses')
             except:
-                console_mode(); return
                 console_mode(); return
         curses.wrapper(main)
     except Exception as e:

@@ -3,7 +3,7 @@
 # For Termux on Android, use: pkgbuild -o ai-launcher-pro
 
 pkgname=ai-launcher-pro
-pkgver=2.12.v
+pkgver=2.19.v
 pkgrel=1
 pkgdesc="Menu interactivo con 18 IAs para programar (curses UI)"
 arch=('any')

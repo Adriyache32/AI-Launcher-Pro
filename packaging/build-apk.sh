@@ -7,7 +7,7 @@ set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
-VERSION="2.12.v"
+VERSION="2.19.v"
 PKG_NAME="ai-launcher-pro"
 LAUNCHER="../launcher.py"
 
@@ -32,7 +32,7 @@ source.include_exts = py
 version = ${VERSION}
 version.regex = 
 version.filename = %(source.dir)s/src/version.txt
-requirements = python3, curses, shutil, shlex, pathlib
+requirements = python3, curses
 orientation = landscape
 osx.python_version = 3
 fullscreen = 1
@@ -58,12 +58,9 @@ p4a.source_dir =
 p4a.local_recipes = 
 p4a.hooks = 
 p4a.hook = 
-p4a.requirements = python3, curses, shutil, shlex, pathlib
+p4a.requirements = python3, curses
 p4a.orientation = landscape
 p4a.window_size = 800x600
-
-# Build
-requirements = python3
 presplash.filename = 
 icon.filename = 
 SPEC

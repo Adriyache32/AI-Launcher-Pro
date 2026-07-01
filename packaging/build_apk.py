@@ -14,7 +14,7 @@ import os, sys, subprocess, shutil, json
 from pathlib import Path
 
 HERE = Path(__file__).parent
-VERSION = "2.11.v"
+VERSION = "2.19.v"
 PKG = "com.ailauncher.pro"
 NAME = "AI Launcher Pro"
 

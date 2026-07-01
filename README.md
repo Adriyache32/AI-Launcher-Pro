@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/AI%20Launcher%20Pro-2.18.v-blue?style=for-the-badge&logo=python">
+  <img src="https://img.shields.io/badge/AI%20Launcher%20Pro-2.19.v-blue?style=for-the-badge&logo=python">
 </p>
 
 <p align="center">
@@ -43,11 +43,12 @@ run.bat           # Windows CMD
 
 | Tecla | Accion |
 |-------|--------|
-| `↑↓` | Navegar categorias |
-| `→` | Entrar al grid de IAs |
-| `↑↓←→` | Moverte entre IAs |
-| `Enter` | Lanzar IA en terminal nueva |
-| `←` | Volver a sidebar |
+| `↑↓` | Navegar entre IAs |
+| `Enter` | Lanzar / mostrar instalacion |
+| `i` | Info + calificar IA (1-5) |
+| `u` | Buscar actualizaciones |
+| `p` | Package recomendado |
+| `e` | Packages opcionales |
 | `q` | Salir |
 
 ## Instalar en Termux
