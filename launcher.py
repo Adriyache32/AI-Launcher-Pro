@@ -18,49 +18,38 @@ def check_version():
 
 CATS = [
     ("TOP TIER", "★★★★★", [
-        ("Claude Code",     ["~/.claude", "cmd:npx"],          [NPX, "@anthropic-ai/claude-code"]),
-        ("opencode",        ["~/.opencode"],                   [str(HOME/".opencode/bin/opencode")]),
+        ("Claude Code",     "npx",              [NPX, "@anthropic-ai/claude-code"]),
+        ("opencode",        str(HOME/".opencode/bin/opencode"), [str(HOME/".opencode/bin/opencode")]),
     ]),
     ("BEST VALUE", "★★★★☆", [
-        ("OpenAI",          ["~/.openai", "cmd:openai"],       ["openai"]),
-        ("Gemini-CLI",      ["~/.gemini", "cmd:gemini-cli"],   ["gemini-cli"]),
-        ("xAI (Grok)",      ["cmd:grok"],                      ["grok"]),
-        ("Ollama",          ["~/.ollama", "cmd:ollama"],       ["ollama","run","llama3.1"]),
+        ("OpenAI",          "openai",     ["openai"]),
+        ("Gemini-CLI",      "gemini-cli", ["gemini-cli"]),
+        ("xAI (Grok)",      "grok",       ["grok"]),
+        ("Ollama",          "ollama",     ["ollama","run","llama3.1"]),
     ]),
     ("SOLID", "★★★☆☆", [
-        ("Cline",          ["~/.vscode/extensions/saoudrizwan.claude-dev*", "cmd:code"],  ["code","--install-extension","saoudrizwan.claude-dev"]),
-        ("GitHub Copilot", ["~/.vscode/extensions/github.copilot*", "cmd:gh"],             ["gh","copilot"]),
-        ("Kilo Code",      ["~/.vscode/extensions/kilocode.kilocode*", "cmd:code"],        ["code","--install-extension","kilocode.kilocode"]),
-        ("Cursor IDE",     ["~/.cursor", "cmd:cursor"],        ["cursor","."]),
-        ("OpenRouter",     ["cmd:openrouter"],                  ["openrouter"]),
-        ("Kiro AI",        ["cmd:kiro"],                        ["kiro"]),
-        ("Vertex AI",      ["~/.config/gcloud", "cmd:gcloud"], ["gcloud"]),
+        ("Cline",          "code",  ["code","--install-extension","saoudrizwan.claude-dev"]),
+        ("GitHub Copilot", "gh",    ["gh","copilot"]),
+        ("Kilo Code",      "code",  ["code","--install-extension","kilocode.kilocode"]),
+        ("Cursor IDE",     "cursor",["cursor","."]),
+        ("OpenRouter",     "openrouter",["openrouter"]),
+        ("Kiro AI",        "kiro",  ["kiro"]),
+        ("Vertex AI",      "gcloud",["gcloud"]),
     ]),
     ("NICHE", "★★☆☆☆", [
-        ("Nvidia NIM",     ["~/.nim", "cmd:docker"],           ["docker"]),
-        ("Cloudflare AI",  ["~/.cloudflare", "cmd:wrangler"],  ["wrangler"]),
-        ("Qoder",          ["cmd:qoder"],                      ["qoder"]),
-        ("Antigravity",    ["cmd:antigravity"],                ["antigravity"]),
-        ("BytePlus",       ["cmd:byteplus"],                   ["byteplus"]),
+        ("Nvidia NIM",     "docker",   ["docker"]),
+        ("Cloudflare AI",  "wrangler", ["wrangler"]),
+        ("Qoder",          "qoder",    ["qoder"]),
+        ("Antigravity",    "antigravity",["antigravity"]),
+        ("BytePlus",       "byteplus", ["byteplus"]),
     ]),
 ]
 
 ALL = [(c, s, a) for cat, star, items in CATS for a in items for c, s in [[cat, star]]]
 
-def ready(checks):
-    for c in checks:
-        if c.startswith("cmd:"):
-            if shutil.which(c[4:]) is not None: return True
-        elif "*" in c:
-            p = Path(c).expanduser()
-            parent = p.parent
-            try:
-                for _ in parent.glob(p.name):
-                    return True
-            except: pass
-        else:
-            if Path(c).expanduser().exists(): return True
-    return False
+def ready(check):
+    if check.startswith(str(HOME)): return Path(check).exists()
+    return shutil.which(check) is not None
 
 def find_term():
     if W: return None
@@ -112,6 +101,13 @@ def main(scr):
     curses.init_pair(1, curses.COLOR_RED, -1)
     curses.init_pair(2, curses.COLOR_GREEN, -1)
     curses.init_pair(3, curses.COLOR_YELLOW, -1)
+    curses.init_pair(4, curses.COLOR_CYAN, -1)
+    curses.init_pair(5, curses.COLOR_MAGENTA, -1)
+    curses.init_pair(6, curses.COLOR_BLUE, -1)
+
+    # category color mapping
+    CCOL = {"TOP TIER":1, "BEST VALUE":2, "SOLID":4, "NICHE":5}
+    CI = [CCOL[c] for c,_,items in CATS for _ in items]  # per tool index
     scr.nodelay(1)
     for _ in range(6): scr.clear(); scr.refresh(); time.sleep(0.02)
     scr.nodelay(0)
@@ -182,13 +178,14 @@ def main(scr):
                     if yy < topy or yy > boty: continue
                     r = "●" if ready(check) else "○"
                     sl = curses.A_REVERSE if gi == idx else 0
-                    rc = G if ready(check) else Y
+                    cc = curses.color_pair(CI[gi])
+                    rc = cc if ready(check) else Y
                     num = gi + 1
                     txt = f"│ {num:2d} {r} {name:23s}│"
                     sa(scr,yy,2,txt,rc|sl)
                     gi += 1
                 if sy2 >= topy and sy2 <= boty:
-                    sa(scr,sy2,2,f"│  {cat:28s}│",R|B)
+                    sa(scr,sy2,2,f"│  {cat:28s}│",curses.color_pair(CCOL.get(cat,1))|B)
                 if sy2+1 >= topy and sy2+1 <= boty:
                     sa(scr,sy2+1,2,f"│  {star:28s}│",Y)
                 if sy2+2 >= topy and sy2+2 <= boty:
@@ -209,14 +206,15 @@ def main(scr):
                 if yy < topy - 3 or yy > boty:
                     gi += 1; continue
                 sl = curses.A_REVERSE if gi == idx else 0
+                cc = curses.color_pair(CI[gi])
                 cx = sx + 3 + col*23
                 num = gi+1; rdy = ready(check)
                 dot = "●" if rdy else "○"; st = "LISTO" if rdy else "FALTA"
                 n2 = name[:16]
-                sa(scr,yy,cx,"┌────────────────────┐",G|sl)
-                sa(scr,yy+1,cx,f"│ {num:2d} {n2:16s}│",G|sl)
-                sa(scr,yy+2,cx,f"│ {star} {dot} {st} │",G|sl)
-                sa(scr,yy+3,cx,"└────────────────────┘",G|sl)
+                sa(scr,yy,cx,"┌────────────────────┐",cc|sl)
+                sa(scr,yy+1,cx,f"│ {num:2d} {n2:16s}│",cc|sl)
+                sa(scr,yy+2,cx,f"│ {star} {dot} {st} │",cc|sl)
+                sa(scr,yy+3,cx,"└────────────────────┘",cc|sl)
                 gi += 1
 
         for i in range(w): sa(scr,h-3,i,"═",R)
