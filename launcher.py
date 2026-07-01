@@ -10,7 +10,6 @@ CATS = [
     ("TOP TIER", "★★★★★", [
         ("Claude Code",     "npx",              [NPX, "@anthropic-ai/claude-code"]),
         ("TU (opencode)",   str(HOME/".opencode/bin/opencode"), [str(HOME/".opencode/bin/opencode")]),
-        ("Free Claude Code","free-claude-code", ["free-claude-code"]),
     ]),
     ("BEST VALUE", "★★★★☆", [
         ("OpenAI",          "openai",     ["openai"]),
@@ -110,6 +109,7 @@ def main(scr):
             sa(scr,h//2-5+y,w//2-36,l[:len(l)//6*(i+1)],curses.color_pair(1)|curses.A_BOLD)
         sa(scr,h//2+1,w//2-10,"AI LAUNCHER PRO  v2.0",curses.color_pair(2)|curses.A_BOLD)
         scr.refresh(); time.sleep(0.05)
+    sa(scr,h//2+2,w//2-5,"18 TOOLS",curses.color_pair(3))
     sa(scr,h-2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
     scr.refresh(); scr.getch()
 
@@ -124,7 +124,7 @@ def main(scr):
         B = curses.A_BOLD
         for i in range(w): sa(scr,0,i,"═",R)
         sa(scr,1,2,"AI LAUNCHER PRO  v2.0",R|B)
-        sa(scr,1,w-10,"19 TOOLS",G)
+        sa(scr,1,w-10,"18 TOOLS",G)
         for i in range(w): sa(scr,2,i,"═",R)
 
         # layout: left sidebar + right cards
