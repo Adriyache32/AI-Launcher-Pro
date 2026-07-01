@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/AI%20Launcher%20Pro-2.17.v-blue?style=for-the-badge&logo=python">
+  <img src="https://img.shields.io/badge/AI%20Launcher%20Pro-2.18.v-blue?style=for-the-badge&logo=python">
 </p>
 
 <p align="center">

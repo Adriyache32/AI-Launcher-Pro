@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import curses, time, subprocess, os, shutil, shlex, platform, sys, json
+import importlib
 from pathlib import Path
 
 if sys.version_info < (3, 7):
@@ -8,7 +9,7 @@ if sys.version_info < (3, 7):
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
-VERSION = "2.17.v"
+VERSION = "2.18.v"
 GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
 GIT_LAUNCHER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/launcher.py"
 
@@ -30,8 +31,6 @@ def do_update(scr):
     try:
         r = urllib.request.urlopen(GIT_LAUNCHER_URL, timeout=10)
         new_code = r.read().decode("utf-8")
-        this_file = Path(__file__).resolve() if "__file__" in dir() else Path(sys.argv[0]).resolve()
-        import sys
         this_file = Path(sys.argv[0]).resolve()
         backup = this_file.with_suffix(".py.bak")
         if backup.exists(): backup.unlink()
@@ -146,7 +145,12 @@ ALL = [(c, s, a) for cat, star, items in CATS for a in items for c, s in [[cat, 
 
 def ready(checks):
     for c in checks:
-        if c.startswith("cmd:"):
+        if c.startswith("import:"):
+            try:
+                importlib.import_module(c[7:])
+                return True
+            except: pass
+        elif c.startswith("cmd:"):
             if shutil.which(c[4:]) is not None: return True
         elif "*" in c:
             p = Path(c).expanduser()
@@ -196,8 +200,9 @@ def check_pkg_mgrs(install_cmds):
                 break
     return missing
 
+PKG_BASE = "https://github.com/Adriyache32/AI-Launcher-Pro/releases/download/packages/"
+
 def detect_package_need():
-    PKG_BASE = "https://github.com/Adriyache32/AI-Launcher-Pro/releases/download/packages/"
     if SP.get("ios"):
         return ("iOS", "🍏 iOS (proximamente)", PKG_BASE + f"AI-Launcher-iOS-{VERSION}.zip",
                 "iOS detectado. Package para iPhone/iPad en desarrollo.")
@@ -206,8 +211,9 @@ def detect_package_need():
                 "Package oficial para Termux. Instala dependencias y deja 'open-ai' listo.")
     if W:
         try:
-            import _curses
-        except ImportError:
+            import importlib as _il
+            _il.import_module('curses')
+        except:
             return ("Windows", "🪟 Windows + curses", PKG_BASE + f"AI-Launcher-Windows-{VERSION}.zip",
                     "Windows sin curses detectado. El package instala Python y windows-curses automaticamente.")
     if SP["ram_gb"] < 1 or SP["cpu_cores"] < 2:
@@ -220,15 +226,15 @@ def detect_package_need():
 
 PKG_EXTRAS = []
 if SP["os"] == "linux":
-    PKG_EXTRAS.append(("🐧 Linux Enhancement", PKG_BASE + "AI-Launcher-Linux-Enhancement-v2.17.v.zip",
+    PKG_EXTRAS.append(("🐧 Linux Enhancement", PKG_BASE + "AI-Launcher-Linux-Enhancement-v2.18.v.zip",
                        "Mejoras opcionales: desktop, auto-completion, aliases, temas, systemd, comandos extra"))
-    PKG_EXTRAS.append(("🪟 Windows", PKG_BASE + "AI-Launcher-Windows-v2.17.v.zip",
+    PKG_EXTRAS.append(("🪟 Windows", PKG_BASE + "AI-Launcher-Windows-v2.18.v.zip",
                        "Instalador para Windows con Python + curses automatico"))
-    PKG_EXTRAS.append(("📱 Termux", PKG_BASE + "AI-Launcher-Termux-v2.17.v.zip",
+    PKG_EXTRAS.append(("📱 Termux", PKG_BASE + "AI-Launcher-Termux-v2.18.v.zip",
                        "Setup para Termux (Android)"))
-    PKG_EXTRAS.append(("🖥️ Legacy", PKG_BASE + "AI-Launcher-Legacy-v2.17.v.zip",
+    PKG_EXTRAS.append(("🖥️ Legacy", PKG_BASE + "AI-Launcher-Legacy-v2.18.v.zip",
                        "PC viejos, modo texto sin curses"))
-    PKG_EXTRAS.append(("🍏 iOS", PKG_BASE + "AI-Launcher-iOS-v2.17.v.zip",
+    PKG_EXTRAS.append(("🍏 iOS", PKG_BASE + "AI-Launcher-iOS-v2.18.v.zip",
                        "Package para iPhone/iPad (proximamente)"))
 
 def lt(cmd):
@@ -283,9 +289,11 @@ def info_popup(scr, name, tags, rating, ratings_dict, ready_status, install_cmds
     while True:
         k = win.getch()
         if k in (ord('q'), 27):
-            break
+            del win; scr.touchwin(scr); scr.refresh()
+            return (new_rating, "close")
         if k == ord('\n'):
-            break
+            del win; scr.touchwin(scr); scr.refresh()
+            return (new_rating, "launch")
         if ord('0') <= k <= ord('5'):
             new_rating = k - ord('0')
             ratings_dict[name] = new_rating
@@ -293,10 +301,6 @@ def info_popup(scr, name, tags, rating, ratings_dict, ready_status, install_cmds
             stars = "★"*new_rating + "☆"*(5-new_rating) if new_rating > 0 else "☆☆☆☆☆"
             win.addstr(4, 2, f" Rating: {stars}  ({new_rating}/5)")
             win.refresh()
-    del win
-    scr.touchwin(scr)
-    scr.refresh()
-    return new_rating
 
 def dl(scr, name, check, cmd):
     h,w = scr.getmaxyx(); m = h//2
@@ -467,7 +471,7 @@ def main(scr):
         pkg_tag = f" [p] {pkg_need[1]}" if pkg_need else ""
         ext_tag = " [e] extras" if PKG_EXTRAS else ""
         upd = f" ▲ {update_avail}" if update_avail else ""
-        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  i:info  u:update{pkg_tag}{ext_tag}  q salir  {VERSION}{upd}",G)
+        sa(scr,h-2,2,f"↑↓ ENTER i:info u:update{pkg_tag}{ext_tag} q salir  {VERSION}{upd}",G)
         for i in range(w): sa(scr,h-1,i,"═",R)
         scr.refresh()
         k = scr.getch()
@@ -476,7 +480,22 @@ def main(scr):
         elif k == ord('i'):
             cat, star, (name, check, price, reqs, tags, cmd, install_cmds) = ALL[idx]
             old = RATINGS.get(name, 0)
-            info_popup(scr, name, tags, old, RATINGS, ready(check), install_cmds)
+            new_r, action = info_popup(scr, name, tags, old, RATINGS, ready(check), install_cmds)
+            if action == "launch":
+                cm, reason = compatible(SP, reqs)
+                if not cm:
+                    popup(scr, f"{name}\n{reason}")
+                elif not ready(check):
+                    lines = [f"{name} - Instalacion:"]
+                    for c in (install_cmds or ["pip install "+name.lower().replace(" ","")]):
+                        lines.append(f"  $ {c}")
+                    missing = check_pkg_mgrs(install_cmds)
+                    if missing:
+                        lines.append("")
+                        lines.append(f"⚠ Faltan: {', '.join(missing)}")
+                    popup(scr, "\n".join(lines))
+                else:
+                    dl(scr, name, check, cmd)
         elif k == ord('\n'):
             cat, star, (name, check, price, reqs, tags, cmd, install_cmds) = ALL[idx]
             cm, reason = compatible(SP, reqs)
@@ -564,8 +583,10 @@ def mw():
     try:
         if W:
             try:
-                import _curses
-            except ImportError:
+                import importlib as _il
+                _il.import_module('curses')
+            except:
+                console_mode(); return
                 console_mode(); return
         curses.wrapper(main)
     except Exception as e:
