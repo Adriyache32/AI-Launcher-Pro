@@ -199,28 +199,28 @@ def check_pkg_mgrs(install_cmds):
 def detect_package_need():
     PKG_BASE = f"https://github.com/Adriyache32/AI-Launcher-Pro/releases/download/{VERSION}/"
     if SP.get("ios"):
-        return ("iOS", "iOS (proximamente)", PKG_BASE + f"AI-Launcher-iOS-{VERSION}.zip",
+        return ("iOS", "🍏 iOS (proximamente)", PKG_BASE + f"AI-Launcher-iOS-{VERSION}.zip",
                 "iOS detectado. Package para iPhone/iPad en desarrollo.")
     if SP.get("termux"):
-        return ("Termux", "Termux setup", PKG_BASE + f"AI-Launcher-Termux-{VERSION}.zip",
+        return ("Termux", "📱 Termux setup", PKG_BASE + f"AI-Launcher-Termux-{VERSION}.zip",
                 "Package oficial para Termux. Instala dependencias y deja 'open-ai' listo.")
     if W:
         try:
             import _curses
         except ImportError:
-            return ("Windows", "Windows + curses", PKG_BASE + f"AI-Launcher-Windows-{VERSION}.zip",
+            return ("Windows", "🪟 Windows + curses", PKG_BASE + f"AI-Launcher-Windows-{VERSION}.zip",
                     "Windows sin curses detectado. El package instala Python y windows-curses automaticamente.")
     if SP["ram_gb"] < 1 or SP["cpu_cores"] < 2:
-        return ("Legacy", "Old PC / Legacy", PKG_BASE + f"AI-Launcher-Legacy-{VERSION}.zip",
+        return ("Legacy", "🖥️ Old PC / Legacy", PKG_BASE + f"AI-Launcher-Legacy-{VERSION}.zip",
                 f"PC con pocos recursos (RAM: {SP['ram_gb']}GB, CPU: {SP['cpu_cores']} nucleos). Package Legacy optimizado.")
     if SP["arch"] in ("armv7l","armv6l","i586","i686"):
-        return ("Legacy", "Old PC / Legacy", PKG_BASE + f"AI-Launcher-Legacy-{VERSION}.zip",
+        return ("Legacy", "🖥️ Old PC / Legacy", PKG_BASE + f"AI-Launcher-Legacy-{VERSION}.zip",
                 f"Arquitectura {SP['arch']} detectada. Package Legacy para hardware antiguo.")
     return None
 
 PKG_EXTRAS = []
 if SP["os"] == "linux":
-    PKG_EXTRAS.append(("Linux Enhancement", PKG_BASE + "AI-Launcher-Linux-Enhancement-v2.17.v.zip",
+    PKG_EXTRAS.append(("🐧 Linux Enhancement", PKG_BASE + "AI-Launcher-Linux-Enhancement-v2.17.v.zip",
                        "Mejoras opcionales: desktop, auto-completion, aliases, temas, systemd, comandos extra"))
 
 def lt(cmd):
@@ -328,20 +328,18 @@ def main(scr):
     for _ in range(6): scr.clear(); scr.refresh(); time.sleep(0.02)
     scr.nodelay(0)
     h,w = scr.getmaxyx()
-    logo = ["██╗  ██╗██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗███████╗██████╗",
-            "██║  ██║██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔════╝██╔══██╗",
-            "███████║██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║█████╗  ██████╔╝",
-            "██╔══██║██║     ██╔══██║██║   ██║██║╚██╗██║██║     ██╔══██║██╔══╝  ██╔══██╗",
-            "██║  ██║███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║███████╗██║  ██║"]
-    for i in range(6):
+    logo = ["┌─┐┌─┐  ┌─┐┌─┐┬ ┬┌─┐┌┐┌┌─┐┬─┐┌─┐┌─┐",
+            "│ ┬│ │  ├─┤│ ││ │├─┤│││├┤ ├┬┘├┤ └─┐",
+            "└─┘└─┘  ┴ ┴└─┘└─┘┴ ┴┘└┘└─┘┴└─└─┘└─┘"]
+    for i in range(4):
         scr.clear()
         for y,l in enumerate(logo):
-            sa(scr,h//2-5+y,w//2-36,l[:len(l)//6*(i+1)],curses.color_pair(1)|curses.A_BOLD)
+            sa(scr,h//2-2+y,w//2-25,l[:len(l)//4*(i+1)],curses.color_pair(1)|curses.A_BOLD)
         t = "AI LAUNCHER PRO"
-        sa(scr,h//2+1,w//2-len(t)//2,t,curses.color_pair(2)|curses.A_BOLD)
-        sa(scr,h//2+1,w//2+len(t)//2+2,VERSION,curses.color_pair(3))
+        sa(scr,h//2+2,w//2-len(t)//2,t,curses.color_pair(2)|curses.A_BOLD)
+        sa(scr,h//2+2,w//2+len(t)//2+2,VERSION,curses.color_pair(3))
         scr.refresh(); time.sleep(0.05)
-    sa(scr,h//2+2,w//2-4,f"{len(ALL)} TOOLS",curses.color_pair(3))
+    sa(scr,h//2+3,w//2-4,f"{len(ALL)} TOOLS",curses.color_pair(3))
     sa(scr,h-2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
     scr.refresh(); scr.getch()
 
@@ -355,9 +353,9 @@ def main(scr):
         topy = 3; boty = h-4; vh = boty - topy + 1
 
         for i in range(w): sa(scr,0,i,"─",R)
-        tit = f"  AI LAUNCHER PRO  {VERSION}  "
+        tit = f"  🤖 AI LAUNCHER PRO  {VERSION}  "
         sa(scr,1,(w-len(tit))//2,tit,R|B)
-        sa(scr,1,2,f"◆ {len(ALL)} TOOLS",G)
+        sa(scr,1,2,f"⚡ {len(ALL)} TOOLS",G)
         for i in range(w): sa(scr,2,i,"─",R)
         lw = 32; sx = lw+3
         for y in range(topy, boty+1): sa(scr,y,sx,"│",R)
@@ -509,11 +507,15 @@ def main(scr):
         elif k == ord('q'): break
 
 def console_mode():
-    print(f"\n  AI LAUNCHER PRO {VERSION} — Modo texto")
+    plat_icon = {"linux":"🐧","darwin":"🍎","windows":"🪟"}
+    icon = plat_icon.get(SP["os"],"💻")
+    print(f"\n  {icon} AI LAUNCHER PRO {VERSION} — Modo texto")
     print(f"  {'='*40}")
-    print(f"  OS: {platform.system()} | Arch: {SP['arch']} | CPU: {SP['cpu_name']} | RAM: {SP['ram_gb']}GB")
-    if SP["termux"]: print("  Terminal: Termux")
-    if SP["ios"]:    print("  Terminal: iOS")
+    print(f"  {icon} OS: {platform.system()} | Arch: {SP['arch']} | CPU: {SP['cpu_name']} | RAM: {SP['ram_gb']}GB")
+    if SP["termux"]:  print("  📱 Terminal: Termux")
+    if SP["ios"]:     print("  🍏 Terminal: iOS")
+    if SP["android"]: print("  🤖 Terminal: Android")
+    if W:             print("  🪟 Terminal: Windows")
     print(f"  {'='*40}\n")
     items = []
     for cat, star, group in CATS:
