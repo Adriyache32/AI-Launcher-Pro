@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-import curses, time, subprocess, os, shutil, shlex, platform
+import curses, time, subprocess, os, shutil, shlex, platform, sys
 from pathlib import Path
 
 HOME = Path.home()
 W = os.name == "nt"
 NPX = "npx.cmd" if W else "npx"
-VERSION = "2.12.v"
+VERSION = "2.14.v"
 GIT_VER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/version.txt"
+GIT_LAUNCHER_URL = "https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/launcher.py"
 
 def check_version():
     import urllib.request
@@ -15,6 +16,37 @@ def check_version():
         latest = r.read().decode("utf-8").strip()
         return latest if latest != VERSION else None
     except: return None
+
+def do_update(scr):
+    import urllib.request
+    h,w = scr.getmaxyx(); m = h//2
+    scr.clear()
+    sa(scr,m-2,w//2-15,"  Actualizando AI Launcher Pro...",curses.color_pair(3)|curses.A_BOLD)
+    sa(scr,m,w//2-12,"Descargando nueva version",curses.color_pair(2))
+    scr.refresh()
+    try:
+        r = urllib.request.urlopen(GIT_LAUNCHER_URL, timeout=10)
+        new_code = r.read().decode("utf-8")
+        this_file = Path(__file__).resolve() if "__file__" in dir() else Path(sys.argv[0]).resolve()
+        import sys
+        this_file = Path(sys.argv[0]).resolve()
+        backup = this_file.with_suffix(".py.bak")
+        if backup.exists(): backup.unlink()
+        this_file.rename(backup)
+        this_file.write_text(new_code)
+        scr.clear()
+        sa(scr,m-2,w//2-12,"  Actualizacion exitosa!",curses.color_pair(2)|curses.A_BOLD)
+        sa(scr,m,w//2-20,"Reinicia el launcher para aplicar cambios",curses.color_pair(3))
+        sa(scr,m+2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
+        scr.refresh(); scr.getch()
+        return True
+    except Exception as e:
+        scr.clear()
+        sa(scr,m-2,w//2-12,"  Error al actualizar",curses.color_pair(1)|curses.A_BOLD)
+        sa(scr,m,w//2-len(str(e))//2,str(e)[:40],curses.color_pair(3))
+        sa(scr,m+2,w//2-15,"Presiona cualquier tecla",curses.color_pair(3)|curses.A_BLINK)
+        scr.refresh(); scr.getch()
+        return False
 
 def detect_specs():
     s = {"os": platform.system().lower(), "arch": platform.machine(), "cpu_name":"desconocido","cpu_cores":0,"ram_gb":0}
@@ -47,33 +79,45 @@ def compatible(specs, reqs):
     return (True, "OK")
 
 SP = detect_specs()
+RATINGS_FILE = HOME / ".config" / "ai-launcher" / "ratings.json"
+
+def load_ratings():
+    try: import json; return json.loads(RATINGS_FILE.read_text())
+    except: return {}
+
+def save_ratings(r):
+    import json
+    RATINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    RATINGS_FILE.write_text(json.dumps(r))
+
+RATINGS = load_ratings()
 
 CATS = [
     ("TOP TIER", "★★★★★", [
-        ("Claude Code",     ["~/.claude","cmd:npx"],          "LIMITADA",  {"ram":8,"cpu_cores":4},   [NPX,"@anthropic-ai/claude-code"]),
-        ("opencode",        ["~/.opencode"],                   "GRATIS",    {"ram":0,"cpu_cores":0},   [str(HOME/".opencode/bin/opencode")]),
+        ("Claude Code",     ["~/.claude","cmd:npx"],          "LIMITADA",  {"ram":8,"cpu_cores":4},   ["programar","estudiar","diario"],       [NPX,"@anthropic-ai/claude-code"],            ["npm install -g @anthropic-ai/claude-code"]),
+        ("opencode",        ["~/.opencode"],                   "GRATIS",    {"ram":0,"cpu_cores":0},   ["programar","estudiar"],               [str(HOME/".opencode/bin/opencode")],          ["curl -fsSL https://opencode.ai/install.sh | sh"]),
     ]),
     ("BEST VALUE", "★★★★☆", [
-        ("OpenAI",          ["~/.openai","cmd:openai"],       "PAGA",      {"ram":0,"cpu_cores":0},   ["openai"]),
-        ("Gemini-CLI",      ["~/.gemini","cmd:gemini-cli"],   "GRATIS",    {"ram":0,"cpu_cores":0},   ["gemini-cli"]),
-        ("xAI (Grok)",      ["cmd:grok"],                      "LIMITADA",  {"ram":0,"cpu_cores":0},   ["grok"]),
-        ("Ollama",          ["~/.ollama","cmd:ollama"],       "GRATIS",    {"ram":8,"cpu_cores":4},   ["ollama","run","llama3.1"]),
+        ("OpenAI",          ["~/.openai","cmd:openai"],       "PAGA",      {"ram":0,"cpu_cores":0},   ["programar","estudiar","diario","general"],  ["openai"],       ["pip install openai"]),
+        ("Gemini-CLI",      ["~/.gemini","cmd:gemini-cli"],   "GRATIS",    {"ram":0,"cpu_cores":0},   ["programar","estudiar","diario","general"],  ["gemini-cli"],   ["npm install -g @google/generative-ai"]),
+        ("xAI (Grok)",      ["cmd:grok"],                      "LIMITADA",  {"ram":0,"cpu_cores":0},   ["estudiar","diario","general"],         ["grok"],         ["pip install grok"]),
+        ("Ollama",          ["~/.ollama","cmd:ollama"],       "GRATIS",    {"ram":8,"cpu_cores":4},   ["programar","estudiar"],               ["ollama","run","llama3.1"],                  ["curl -fsSL https://ollama.com/install.sh | sh"]),
     ]),
     ("SOLID", "★★★☆☆", [
-        ("Cline",          ["~/.vscode/extensions/saoudrizwan.claude-dev*","cmd:code"],  "GRATIS",  {"ram":0,"cpu_cores":0},  ["code","--install-extension","saoudrizwan.claude-dev"]),
-        ("GitHub Copilot", ["~/.vscode/extensions/github.copilot*","cmd:gh"],             "PAGA",    {"ram":0,"cpu_cores":0},  ["gh","copilot"]),
-        ("Kilo Code",      ["~/.vscode/extensions/kilocode.kilocode*","cmd:code"],        "GRATIS",  {"ram":0,"cpu_cores":0},  ["code","--install-extension","kilocode.kilocode"]),
-        ("Cursor IDE",     ["~/.cursor","cmd:cursor"],        "PAGA",    {"ram":0,"cpu_cores":0},  ["cursor","."]),
-        ("OpenRouter",     ["cmd:openrouter"],                  "PAGA",    {"ram":0,"cpu_cores":0},  ["openrouter"]),
-        ("Kiro AI",        ["cmd:kiro"],                        "PAGA",    {"ram":0,"cpu_cores":0},  ["kiro"]),
-        ("Vertex AI",      ["~/.config/gcloud","cmd:gcloud"], "PAGA",    {"ram":0,"cpu_cores":0},  ["gcloud"]),
+        ("Cline",          ["~/.vscode/extensions/saoudrizwan.claude-dev*","cmd:code"],  "GRATIS",  {"ram":0,"cpu_cores":0},  ["programar"],  ["code","--install-extension","saoudrizwan.claude-dev"],  ["code --install-extension saoudrizwan.claude-dev"]),
+        ("GitHub Copilot", ["~/.vscode/extensions/github.copilot*","cmd:gh"],             "PAGA",    {"ram":0,"cpu_cores":0},  ["programar","estudiar"],  ["gh","copilot"],  ["code --install-extension github.copilot"]),
+        ("Kilo Code",      ["~/.vscode/extensions/kilocode.kilocode*","cmd:code"],        "GRATIS",  {"ram":0,"cpu_cores":0},  ["programar"],  ["code","--install-extension","kilocode.kilocode"],  ["code --install-extension kilocode.kilocode"]),
+        ("Cursor IDE",     ["~/.cursor","cmd:cursor"],        "PAGA",    {"ram":0,"cpu_cores":0},  ["programar"],  ["cursor","."],  ["curl -fsSL https://cursor.sh/install | sh"]),
+        ("OpenRouter",     ["cmd:openrouter"],                  "PAGA",    {"ram":0,"cpu_cores":0},  ["programar","general"],  ["openrouter"],  ["npm install -g openrouter"]),
+        ("Kiro AI",        ["cmd:kiro"],                        "PAGA",    {"ram":0,"cpu_cores":0},  ["programar"],  ["kiro"],  ["pip install kiro-ai"]),
+        ("Vertex AI",      ["~/.config/gcloud","cmd:gcloud"], "PAGA",    {"ram":0,"cpu_cores":0},  ["programar"],  ["gcloud"],  ["pip install google-cloud-aiplatform"]),
     ]),
     ("NICHE", "★★☆☆☆", [
-        ("Nvidia NIM",     ["~/.nim","cmd:docker"],           "LIMITADA",  {"ram":16,"cpu_cores":8},  ["docker"]),
-        ("Cloudflare AI",  ["~/.cloudflare","cmd:wrangler"],  "GRATIS",    {"ram":0,"cpu_cores":0},  ["wrangler"]),
-        ("Qoder",          ["cmd:qoder"],                      "GRATIS",    {"ram":0,"cpu_cores":0},  ["qoder"]),
-        ("Antigravity",    ["cmd:antigravity"],                "GRATIS",    {"ram":0,"cpu_cores":0},  ["antigravity"]),
-        ("BytePlus",       ["cmd:byteplus"],                   "PAGA",      {"ram":0,"cpu_cores":0},  ["byteplus"]),
+        ("Nvidia NIM",     ["~/.nim","cmd:docker"],           "LIMITADA",  {"ram":16,"cpu_cores":8},  ["programar"],  ["docker"],  ["pip install nvidia-nim"]),
+        ("Cloudflare AI",  ["~/.cloudflare","cmd:wrangler"],  "GRATIS",    {"ram":0,"cpu_cores":0},  ["programar"],  ["wrangler"],  ["npm install -g @cloudflare/ai"]),
+        ("Qoder",          ["cmd:qoder"],                      "GRATIS",    {"ram":0,"cpu_cores":0},  ["programar"],  ["qoder"],  ["pip install qoder"]),
+        ("Antigravity",    ["cmd:antigravity"],                "GRATIS",    {"ram":0,"cpu_cores":0},  ["programar","estudiar","general"],  ["antigravity"],  ["pip install antigravity"]),
+        ("BytePlus",       ["cmd:byteplus"],                   "PAGA",      {"ram":0,"cpu_cores":0},  ["programar"],  ["byteplus"],  ["pip install byteplus"]),
     ]),
 ]
 
@@ -135,6 +179,49 @@ def popup(scr, msg):
     del win
     scr.touchwin(scr)
     scr.refresh()
+
+def info_popup(scr, name, tags, rating, ratings_dict, ready_status, install_cmds):
+    h,w = scr.getmaxyx()
+    mh = 14; mw = 50
+    y = h//2 - mh//2; x = w//2 - mw//2
+    win = curses.newwin(mh, mw, y, x)
+    win.box()
+    win.addstr(1, 2, f" {name} ", curses.A_BOLD)
+    tags_str = ", ".join(tags)
+    win.addstr(2, 2, f" Tags: {tags_str}")
+    sep = "─"*(mw-6)
+    win.addstr(3, 2, f" {sep}")
+    stars = "★"*rating + "☆"*(5-rating) if rating > 0 else "☆☆☆☆☆"
+    win.addstr(4, 2, f" Rating: {stars}  ({rating}/5)")
+    win.addstr(5, 2, f" {sep}")
+    if not ready_status and install_cmds:
+        win.addstr(6, 2, " Instalar:", curses.A_BOLD)
+        for j, c in enumerate(install_cmds):
+            if 7+j < mh-3:
+                win.addstr(7+j, 4, c[:mw-8])
+    else:
+        win.addstr(6, 2, " 1-5: calificar")
+        win.addstr(7, 2, " 0: quitar rating")
+    win.addstr(mh-3, 2, " ENTER: lanzar  q: cerrar")
+    win.refresh()
+    new_rating = rating
+    while True:
+        k = win.getch()
+        if k in (ord('q'), 27):
+            break
+        if k == ord('\n'):
+            break
+        if ord('0') <= k <= ord('5'):
+            new_rating = k - ord('0')
+            ratings_dict[name] = new_rating
+            save_ratings(ratings_dict)
+            stars = "★"*new_rating + "☆"*(5-new_rating) if new_rating > 0 else "☆☆☆☆☆"
+            win.addstr(4, 2, f" Rating: {stars}  ({new_rating}/5)")
+            win.refresh()
+    del win
+    scr.touchwin(scr)
+    scr.refresh()
+    return new_rating
 
 def dl(scr, name, check, cmd):
     h,w = scr.getmaxyx(); m = h//2
@@ -231,7 +318,7 @@ def main(scr):
             n = len(items); bh = n + 4
             vy2 = sy; sy2 = sy
             if sy2 + bh > topy - 1:
-                for i0, (name, check, _, _, _) in enumerate(items):
+                for i0, (name, check, _, _, _, _, _) in enumerate(items):
                     yy = sy2 + 3 + i0
                     if yy < topy or yy > boty: continue
                     r = "●" if ready(check) else "○"
@@ -242,8 +329,8 @@ def main(scr):
                     txt = f"│ {num:2d} {r} {name:23s}│"
                     sa(scr,yy,2,txt,rc|sl)
                     gi += 1
-                if sy2 >= topy and sy2 <= boty and gi >= n:
-                    sa(scr,sy2,2,f"│  {cat:28s}│",curses.color_pair(TC[gi-n])|B)
+                if sy2 >= topy and sy2 <= boty:
+                    sa(scr,sy2,2,f"│  {cat:28s}│",curses.color_pair(TC[gi])|B)
                 if sy2+1 >= topy and sy2+1 <= boty:
                     sa(scr,sy2+1,2,f"│  {star:28s}│",Y)
                 if sy2+2 >= topy and sy2+2 <= boty:
@@ -257,7 +344,7 @@ def main(scr):
         # cards
         gi = 0
         for _,_,items in CATS:
-            for i, (name, check, price, reqs, cmd) in enumerate(items):
+            for i, (name, check, price, reqs, tags, cmd, _) in enumerate(items):
                 col = i%2
                 vy2 = card_y[gi]
                 yy = vy2 - scroll
@@ -300,19 +387,29 @@ def main(scr):
 
         for i in range(w): sa(scr,h-3,i,"═",R)
         upd = f"  ▲ {update_avail}" if update_avail else ""
-        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  q salir  {VERSION}{upd}",G)
+        sa(scr,h-2,2,f"↑↓ mover  ENTER lanzar  i:info  u:update  q salir  {VERSION}{upd}",G)
         for i in range(w): sa(scr,h-1,i,"═",R)
         scr.refresh()
         k = scr.getch()
         if k == curses.KEY_UP and idx > 0: idx -= 1
         elif k == curses.KEY_DOWN and idx < len(ALL)-1: idx += 1
+        elif k == ord('i'):
+            cat, star, (name, check, price, reqs, tags, cmd, install_cmds) = ALL[idx]
+            old = RATINGS.get(name, 0)
+            info_popup(scr, name, tags, old, RATINGS, ready(check), install_cmds)
         elif k == ord('\n'):
-            cat, star, (name, check, price, reqs, cmd) = ALL[idx]
+            cat, star, (name, check, price, reqs, tags, cmd, install_cmds) = ALL[idx]
             cm, reason = compatible(SP, reqs)
             if not cm:
                 popup(scr, f"{name}\n{reason}\nTu PC no cumple los requisitos minimos")
+            elif not ready(check):
+                msg = f"{name} - Instalacion:\n"
+                msg += "\n".join(f"  ${c}" for c in (install_cmds or ["pip install "+name.lower().replace(" ","")]))
+                popup(scr, msg)
             else:
                 dl(scr, name, check, cmd)
+        elif k == ord('u'):
+            if do_update(scr): return
         elif k == ord('q'): break
 
 def mw():
