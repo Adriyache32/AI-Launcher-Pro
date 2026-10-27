@@ -1,0 +1,42 @@
+name: 🐛 Bug Report
+description: Reportar un error en AI-Launcher-Pro
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar un bug.
+  - type: input
+    id: version
+    attributes:
+      label: Versión
+      description: Versión de AI-Launcher-Pro (ver version.txt)
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plataforma
+      options:
+        - Linux
+        - Windows
+        - macOS
+        - Termux/Android
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. Ejecuta launcher.py
+        2. Selecciona IA...
+        3. Ocurre error...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Error
+      render: shell

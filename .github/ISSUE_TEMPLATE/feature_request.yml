@@ -1,0 +1,29 @@
+name: ✨ Feature Request
+description: Sugerir nueva funcionalidad
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema que resuelve
+      validations:
+        required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solución propuesta
+      validations:
+        required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Core / launcher.py
+        - IAs soportadas
+        - UI / Terminal
+        - Instalación / Packaging
+        - Multiplataforma
+    validations:
+      required: true
