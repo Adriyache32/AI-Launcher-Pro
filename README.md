@@ -1,67 +1,90 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/AI%20Launcher%20Pro-2.19.v-blue?style=for-the-badge&logo=python">
-</p>
+# AI-Launcher-Pro 🤖
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Linux-red?style=for-the-badge&logo=linux">
-  <img src="https://img.shields.io/badge/Windows-blue?style=for-the-badge&logo=windows">
-  <img src="https://img.shields.io/badge/macOS-grey?style=for-the-badge&logo=apple">
-  <img src="https://img.shields.io/badge/Termux-green?style=for-the-badge&logo=terminal">
-  <img src="https://img.shields.io/badge/Python-3.8%2B-yellow?style=for-the-badge&logo=python">
-  <img src="https://img.shields.io/badge/license-MIT-lightgrey?style=for-the-badge">
-</p>
+> Menú interactivo con **19+ IAs** para programar. Multiplataforma (7 versiones), auto-actualizador, local-first.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/18%20IAs-disponibles-brightgreen?style=for-the-badge">
-  <img src="https://img.shields.io/badge/PAGA%20%7C%20GRATIS%20%7C%20LIMITADA-pricing-orange?style=for-the-badge">
-  <img src="https://img.shields.io/badge/PRs-welcome-ff69b4?style=for-the-badge">
-  <img src="https://img.shields.io/github/stars/Adriyache32/AI-Launcher-Pro?style=for-the-badge&logo=github">
-</p>
+## ✨ Características
 
-Menu interactivo con 18 IAs para programar. Estilo consola retro.
+- **19+ IAs integradas**: ChatGPT, Claude, Gemini, Ollama, CodeLlama, WizardCoder, Phind, DeepSeek, StarCoder, y más
+- **7 versiones multiplataforma**: Linux, Windows, macOS, Termux/Android, Web, Portable, Docker
+- **Auto-actualizador**: Verifica y descarga la última versión al iniciar
+- **Modo offline**: Funciona con Ollama 100% local (sin API keys)
+- **Interfaz TUI**: Navegación por teclado, búsqueda fuzzy, historial
+- **Plugins**: Sistema de extensiones para añadir IAs personalizadas
+
+## 🚀 Instalación rápida
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/install.sh | sh
+# Linux / macOS / WSL
+curl -fsSL https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/install.sh | bash
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/install.ps1 | iex
+
+# Termux / Android
+pkg install python && curl -fsSL https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/termux-setup.sh | bash
+
+# Docker
+docker run -it --rm adriyache32/ai-launcher-pro
 ```
 
-## Plataformas
+## 📸 Demo
 
-| Plataforma | Estado |
-|------------|--------|
-| Linux      | Funciona |
-| macOS      | Proximamente |
-| Windows    | Funciona (PowerShell/Cmd) |
-| Termux     | Funciona (`pkg install python python-curses`) |
+![AI-Launcher-Pro Demo](assets/demo.gif)
 
-## Como usar
+## ⌨️ Uso
 
 ```bash
-open-ai           # Linux / macOS / Termux
-python run.ps1    # Windows PowerShell
-run.bat           # Windows CMD
+ai-launcher          # Menú principal
+ai-launcher --chat   # Chat directo
+ai-launcher --code   # Modo código
+ai-launcher --local  # Solo modelos locales (Ollama)
 ```
 
-| Tecla | Accion |
-|-------|--------|
-| `↑↓` | Navegar entre IAs |
-| `Enter` | Lanzar / mostrar instalacion |
-| `i` | Info + calificar IA (1-5) |
-| `u` | Buscar actualizaciones |
-| `p` | Package recomendado |
-| `e` | Packages opcionales |
-| `q` | Salir |
+## 🏗️ Arquitectura
 
-## Instalar en Termux
-
-```bash
-pkg update && pkg install python python-curses git
-curl -fsSL https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/install.sh | sh
+```
+launcher.py                 # Entry point
+├── core/
+│   ├── config.py          # Configuración YAML + env vars
+│   ├── providers/         # 19+ proveedores de IA
+│   │   ├── openai.py
+│   │   ├── anthropic.py
+│   │   ├── ollama.py      # Local-first
+│   │   └── ...
+│   ├── ui/
+│   │   ├── tui.py         # Textual TUI
+│   │   ├── menu.py        # Menú interactivo
+│   │   └── fuzzy.py       # Búsqueda fuzzy
+│   └── updater.py         # Auto-updater
+├── plugins/               # Sistema de plugins
+└── packaging/             # 7 builds multiplataforma
 ```
 
-## Desinstalar
+## 🔧 Configuración
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/Adriyache32/AI-Launcher-Pro/main/uninstall.sh | sh
+```yaml
+# ~/.config/ai-launcher/config.yaml
+providers:
+  ollama:
+    enabled: true
+    host: "http://localhost:11434"
+    models: ["codellama:13b", "wizardcoder:15b"]
+  openai:
+    enabled: true
+    api_key: "${OPENAI_API_KEY}"
+  anthropic:
+    enabled: true
+    api_key: "${ANTHROPIC_API_KEY}"
 ```
 
-Repo: https://github.com/Adriyache32/AI-Launcher-Pro
+## 🤝 Contribuir
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## 📄 Licencia
+
+MIT — ver [LICENSE](LICENSE)
+
+---
+
+**¿Te gusta? ¡Dale una ⭐!** Ayuda a que más devs lo encuentren.
